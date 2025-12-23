@@ -4,9 +4,14 @@ import { useEffect, useState } from 'react'
 import { supabase, type Category, type Participant } from '@/lib/supabase'
 import Link from 'next/link'
 import { IoMdArrowBack, IoMdSearch, IoMdCheckmark, IoMdShare } from 'react-icons/io'
-import { FaTrophy, FaStar, FaHeart } from 'react-icons/fa'
+import { FaTrophy, FaStar } from 'react-icons/fa'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import Aurora from '@/components/Aurora'
+import SpotlightCard from '@/components/SpotlightCard'
+import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
+import AuthGuard from '@/components/AuthGuard'
+import UserMenu from '@/components/UserMenu'
 
 // Configuración de toast personalizada
 const toastConfig = {
@@ -342,7 +347,7 @@ export default function VotePage() {
         voting_phase: currentPhase
       }])
 
-      toast.success(currentPhase === 1 ? '¡Duo votado! 💕' : '¡Voto final registrado! 🏆', {
+      toast.success(currentPhase === 1 ? '¡Duo votado!' : '¡Voto final registrado! 🏆', {
         ...toastConfig,
         autoClose: 2500,
       })
@@ -485,18 +490,36 @@ export default function VotePage() {
   // Vista: Listado de categorías
   if (!selectedCategory) {
     return (
-      <div className="min-h-screen bg-black">
+      <AuthGuard>
+      <div className="min-h-screen relative bg-black">
+        {/* Fondo animado Aurora */}
+        <div className="fixed inset-0 z-0">
+          <Aurora
+            colorStops={['#06B6D4', '#A855F7', '#EC4899']}
+            amplitude={1.2}
+            blend={0.6}
+            speed={0.8}
+          />
+        </div>
+
+        {/* Contenido por encima del fondo */}
+        <div className="relative z-10">
         {/* Header - Compact */}
         <div className="relative border-b border-gray-800">
           <div className="container mx-auto px-6 py-8">
-            <Link href="/" className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition-colors">
-              <IoMdArrowBack /> Volver al inicio
-            </Link>
+            <div className="flex items-center justify-between mb-6">
+              <Link href="/" className="inline-flex items-center gap-2 text-white hover:text-gray-300 transition-colors">
+                <IoMdArrowBack /> Volver al inicio
+              </Link>
+              <UserMenu />
+            </div>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-5xl font-black mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                  LOS EPAMIES
-                </h1>
+                <img
+                  src="/logo-epamies.svg"
+                  alt="LOS EPAMIES"
+                  className="h-16 md:h-20 w-auto mb-2 brightness-0 invert"
+                />
                 <p className="text-lg text-gray-400">Voting Stage</p>
               </div>
               {/* Search Bar - Right side */}
@@ -516,21 +539,19 @@ export default function VotePage() {
 
         {/* Categories Grid */}
         <div className="container mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {categories.map((category) => (
-              <button
+              <SpotlightCard
                 key={category.id}
                 onClick={() => setSelectedCategory(category)}
-                className="group relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-gray-800 hover:border-cyan-400 transition-all duration-300 hover:scale-105"
+                spotlightColor="rgba(139, 92, 246, 0.4)"
+                className="group cursor-pointer aspect-[3/4] rounded-xl border-2 border-gray-800 hover:border-cyan-400 transition-all duration-300 hover:scale-105"
               >
-                {/* Background gradient - Corporate colors */}
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 via-purple-600 to-purple-800 opacity-90 group-hover:opacity-100 transition-opacity"></div>
-
-                {/* Subtle overlay */}
-                <div className="absolute inset-0 bg-black/20"></div>
+                {/* Background - Softer color with alpha */}
+                <div className="absolute inset-0 bg-black/70 group-hover:bg-black/60 transition-colors -z-10"></div>
 
                 {/* Content */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
                   <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
                     {category.name}
                   </h3>
@@ -542,22 +563,12 @@ export default function VotePage() {
                 </div>
 
                 {/* Bottom badge */}
-                <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-4 py-1.5 rounded-full border ${
-                  category.category_type === 'duo' ? 'border-pink-400/50' : 'border-cyan-400/50'
-                }`}>
-                  <p className={`text-xs font-bold whitespace-nowrap ${
-                    category.category_type === 'duo' ? 'text-pink-300' : 'text-cyan-300'
-                  }`}>
-                    {category.category_type === 'duo'
-                      ? 'PAREJA'
-                      : category.category_type === 'text_based' && (category.voting_phase || 1) === 1
-                      ? 'ESCRIBIR'
-                      : currentPhase === 2
-                      ? 'TOP 4'
-                      : 'VOTAR'}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-4 py-1.5 rounded-full border border-cyan-400/50">
+                  <p className="text-xs font-bold whitespace-nowrap text-cyan-300">
+                    VOTAR
                   </p>
                 </div>
-              </button>
+              </SpotlightCard>
             ))}
           </div>
 
@@ -568,7 +579,9 @@ export default function VotePage() {
           )}
         </div>
         <ToastContainer />
+        </div>
       </div>
+      </AuthGuard>
     )
   }
 
@@ -579,20 +592,36 @@ export default function VotePage() {
 
   // Vista: Nominados de la categoría seleccionada
   return (
-    <div className="min-h-screen bg-black">
+    <AuthGuard>
+    <div className="min-h-screen relative bg-black">
+      {/* Fondo animado Aurora */}
+      <div className="fixed inset-0 z-0">
+        <Aurora
+          colorStops={['#06B6D4', '#A855F7', '#EC4899']}
+          amplitude={1.2}
+          blend={0.6}
+          speed={0.8}
+        />
+      </div>
+
+      {/* Contenido por encima del fondo */}
+      <div className="relative z-10">
       {/* Header */}
       <div className="relative border-b border-gray-800">
         <div className="container mx-auto px-6 py-8">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition-colors text-lg"
-          >
-            <IoMdArrowBack /> Ver todas las categorías
-          </button>
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="inline-flex items-center gap-2 text-white hover:text-gray-300 transition-colors text-lg"
+            >
+              <IoMdArrowBack /> Ver todas
+            </button>
+            <UserMenu />
+          </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent uppercase">
+              <h1 className="text-4xl md:text-5xl font-black mb-2 text-white uppercase">
                 {selectedCategory.name}
               </h1>
               {selectedCategory.description && (
@@ -607,15 +636,9 @@ export default function VotePage() {
 
             {!showTextInput && (
               <div className="text-right">
-                <div className={`inline-block bg-gradient-to-br ${
-                  isDuoCategory
-                    ? 'from-pink-500/20 to-purple-500/20 border-pink-400'
-                    : 'from-cyan-500/20 to-purple-500/20 border-cyan-400'
-                } border rounded-lg px-6 py-3`}>
-                  <p className={`text-sm mb-1 ${isDuoCategory ? 'text-pink-300' : 'text-cyan-300'}`}>
-                    {isDuoCategory
-                      ? 'Tu duo elegido'
-                      : currentPhase === 1 ? 'Votos emitidos' : 'Tu voto'}
+                <div className="inline-block bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-400 rounded-lg px-6 py-3">
+                  <p className="text-sm mb-1 text-cyan-300">
+                    {currentPhase === 1 ? 'Votos emitidos' : 'Tu voto'}
                   </p>
                   <p className="text-3xl font-black text-white">
                     {userVoteCount}/{maxVotes}
@@ -672,23 +695,23 @@ export default function VotePage() {
         ) : selectedCategory?.category_type === 'duo' ? (
           <div className="max-w-4xl mx-auto">
             {/* Duo Selection UI */}
-            <div className="bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-2 border-pink-500/50 rounded-2xl p-8 mb-8">
+            <div className="bg-gradient-to-br from-cyan-900/30 to-purple-900/30 border-2 border-cyan-500/50 rounded-2xl p-8 mb-8">
               <div className="text-center mb-6">
-                <FaHeart className="text-pink-400 text-5xl mx-auto mb-4" />
+                <FaTrophy className="text-cyan-400 text-5xl mx-auto mb-4" />
                 <h2 className="text-3xl font-bold text-white mb-2">Elige tu Duo Favorito</h2>
-                <p className="text-pink-200">Selecciona 2 participantes para formar el mejor duo</p>
+                <p className="text-cyan-200">Selecciona 2 participantes para formar el mejor duo</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 {/* Participant 1 Selector */}
                 <div>
-                  <label className="block text-pink-300 font-bold mb-2 text-sm uppercase">
+                  <label className="block text-cyan-300 font-bold mb-2 text-sm uppercase">
                     Participante 1
                   </label>
                   <select
                     value={duoParticipant1}
                     onChange={(e) => setDuoParticipant1(e.target.value)}
-                    className="w-full bg-gray-900 border-2 border-pink-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-pink-400 transition-colors"
+                    className="w-full bg-gray-900 border-2 border-cyan-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors"
                   >
                     <option value="">Selecciona...</option>
                     {nominations.map(nom => (
@@ -705,13 +728,13 @@ export default function VotePage() {
 
                 {/* Participant 2 Selector */}
                 <div>
-                  <label className="block text-pink-300 font-bold mb-2 text-sm uppercase">
+                  <label className="block text-cyan-300 font-bold mb-2 text-sm uppercase">
                     Participante 2
                   </label>
                   <select
                     value={duoParticipant2}
                     onChange={(e) => setDuoParticipant2(e.target.value)}
-                    className="w-full bg-gray-900 border-2 border-pink-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-pink-400 transition-colors"
+                    className="w-full bg-gray-900 border-2 border-cyan-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors"
                   >
                     <option value="">Selecciona...</option>
                     {nominations.map(nom => (
@@ -731,15 +754,15 @@ export default function VotePage() {
               <button
                 onClick={handleDuoVote}
                 disabled={loading === 'duo-vote' || !duoParticipant1 || !duoParticipant2}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-lg px-8 py-4 rounded-lg transition-all transform hover:scale-105"
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-lg px-8 py-4 rounded-lg transition-all transform hover:scale-105"
               >
-                {loading === 'duo-vote' ? 'Procesando...' : '💕 VOTAR POR ESTE DUO'}
+                {loading === 'duo-vote' ? 'Procesando...' : 'VOTAR POR ESTE DUO'}
               </button>
 
               {/* Show current selection */}
               {duoParticipant1 && duoParticipant2 && (
-                <div className="mt-6 p-4 bg-pink-500/20 border border-pink-400/50 rounded-lg text-center">
-                  <p className="text-pink-200 text-sm">
+                <div className="mt-6 p-4 bg-cyan-500/20 border border-cyan-400/50 rounded-lg text-center">
+                  <p className="text-cyan-200 text-sm">
                     Tu duo seleccionado: <span className="font-bold text-white">
                       {nominations.find(n => n.participant.id === duoParticipant1)?.participant.name}
                       {' & '}
@@ -762,7 +785,7 @@ export default function VotePage() {
                     key={nomination.id}
                     className={`relative aspect-[3/4] rounded-xl overflow-hidden transition-all ${
                       isSelected
-                        ? 'ring-4 ring-pink-400 scale-105'
+                        ? 'ring-4 ring-cyan-400 scale-105'
                         : 'border-2 border-gray-700 opacity-60'
                     }`}
                   >
@@ -782,7 +805,7 @@ export default function VotePage() {
 
                     {/* Selected badge */}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-pink-500 text-white px-2 py-1 rounded-full font-black text-xs flex items-center gap-1">
+                      <div className="absolute top-2 right-2 bg-cyan-500 text-white px-2 py-1 rounded-full font-black text-xs flex items-center gap-1">
                         <IoMdCheckmark /> SELECCIONADO
                       </div>
                     )}
@@ -877,14 +900,39 @@ export default function VotePage() {
         )}
       </div>
 
-      {/* Share button (optional) */}
-      <div className="fixed bottom-8 right-8">
-        <button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold px-8 py-4 rounded-full shadow-2xl transition-all hover:scale-110 flex items-center gap-2">
-          <IoMdShare /> Compartir
+      {/* Fixed Category Navigation - Bottom Right */}
+      <div className="fixed bottom-8 right-8 flex gap-4 z-20">
+        <button
+          onClick={() => {
+            const currentIndex = categories.findIndex(c => c.id === selectedCategory.id)
+            if (currentIndex > 0) {
+              setSelectedCategory(categories[currentIndex - 1])
+            }
+          }}
+          disabled={categories.findIndex(c => c.id === selectedCategory.id) === 0}
+          className="bg-gray-900/80 hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md px-6 py-3 rounded-lg font-bold transition-all border border-cyan-500/50 flex items-center gap-2 text-white"
+        >
+          <MdNavigateBefore className="text-xl" />
+          Anterior
+        </button>
+        <button
+          onClick={() => {
+            const currentIndex = categories.findIndex(c => c.id === selectedCategory.id)
+            if (currentIndex < categories.length - 1) {
+              setSelectedCategory(categories[currentIndex + 1])
+            }
+          }}
+          disabled={categories.findIndex(c => c.id === selectedCategory.id) === categories.length - 1}
+          className="bg-gray-900/80 hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md px-6 py-3 rounded-lg font-bold transition-all border border-cyan-500/50 flex items-center gap-2 text-white"
+        >
+          Siguiente
+          <MdNavigateNext className="text-xl" />
         </button>
       </div>
 
       <ToastContainer />
+      </div>
     </div>
+    </AuthGuard>
   )
 }

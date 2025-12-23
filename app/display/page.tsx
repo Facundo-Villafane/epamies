@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type Category, type Participant } from '@/lib/supabase'
 import { FaTrophy } from 'react-icons/fa'
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
+import FloatingLines from '@/components/FloatingLines'
 
 type NominationDisplay = {
   id: string
@@ -93,11 +94,34 @@ export default function DisplayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
+    <div className="min-h-screen relative text-white p-8">
+      {/* Fondo animado con ondas */}
+      <div className="fixed inset-0 z-0">
+        <FloatingLines
+          linesGradient={['#2DD4BF', '#8B5CF6', '#EC4899']}
+          enabledWaves={['top', 'middle', 'bottom']}
+          lineCount={[8, 10, 6]}
+          lineDistance={[8, 6, 10]}
+          animationSpeed={0.5}
+          interactive={false}
+          parallax={false}
+          mixBlendMode="screen"
+        />
+      </div>
+
+      {/* Contenido por encima del fondo */}
+      <div className="relative z-10">
       <div className="text-center mb-12">
-        <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-          {editionName || 'LOS EPAMIES'}
-        </h1>
+        <div className="flex justify-center mb-4">
+          <img
+            src="/logo-epamies.svg"
+            alt={editionName || 'LOS EPAMIES'}
+            className="h-20 md:h-24 w-auto brightness-0 invert"
+          />
+        </div>
+        {editionName && editionName !== 'LOS EPAMIES' && (
+          <h2 className="text-3xl font-bold text-white mb-2">{editionName}</h2>
+        )}
         <p className="text-xl text-gray-400">
           Categoría {currentCategoryIndex + 1} de {categories.length}
         </p>
@@ -176,6 +200,7 @@ export default function DisplayPage() {
           Siguiente
           <MdNavigateNext className="text-xl" />
         </button>
+      </div>
       </div>
     </div>
   )

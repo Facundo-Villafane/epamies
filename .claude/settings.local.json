@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(if not exist \"c:\\\\Users\\\\FacundoVillafane\\\\Documents\\\\ePAMIES\\\\components\" mkdir \"c:\\\\Users\\\\FacundoVillafane\\\\Documents\\\\ePAMIES\\\\components\")"
+    ]
+  }
+}

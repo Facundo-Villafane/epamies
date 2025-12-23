@@ -9,9 +9,13 @@ export default function Home() {
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-            LOS EPAMIES
-          </h1>
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo-epamies.svg"
+              alt="LOS EPAMIES"
+              className="h-24 md:h-32 w-auto brightness-0 invert"
+            />
+          </div>
           <p className="text-2xl text-gray-400">
             Sistema de gestión de ceremonia de premios
           </p>

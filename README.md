@@ -4,11 +4,13 @@ Web app para ceremonias de premios estilo Oscars/GOTY con gestión en tiempo rea
 
 ## 🚀 Características
 
+- 🗳️ **Sistema de votación** (`/vote`) - Los usuarios pueden votar por sus favoritos
 - ✨ **Pantalla de proyección** (`/display`) - Vista para mostrar en la sala
 - 🎮 **Panel de control** (`/admin`) - Selecciona ganadores manualmente
+- 🔐 **Autenticación con Google** - Login seguro con validación de dominio
 - ⚡ **Actualización en tiempo real** - Los cambios se reflejan automáticamente
-- 🎨 **UI moderna** con Tailwind CSS y efectos visuales
-- 📦 **Supabase** para base de datos, storage y realtime
+- 🎨 **UI moderna** con efectos visuales animados (Aurora, FloatingLines)
+- 📦 **Supabase** para base de datos, storage, realtime y autenticación
 
 ## 📋 Stack Técnico
 
@@ -55,23 +57,34 @@ Abre [http://localhost:3000](http://localhost:3000)
 
 ## 📖 Cómo usar
 
+### Antes de la ceremonia:
+
+1. Revisa `SETUP.md` para la configuración de la base de datos
+2. **Revisa `AUTH_SETUP.md` para configurar la autenticación con Google**
+3. Carga tus ediciones, categorías, participantes y nominados en Supabase
+4. Opcionalmente, sube imágenes a Supabase Storage
+5. Configura los dominios bloqueados en `components/AuthGuard.tsx`
+
+### Durante la votación:
+
+1. **Votantes**: Comparte el link `/vote` con los participantes
+   - Deben iniciar sesión con su cuenta de Gmail personal
+   - Los correos corporativos serán bloqueados automáticamente
+   - Pueden votar en cada categoría según las reglas (hasta 3 votos en fase 1, 1 voto en fase 2)
+   - Los votos se cuentan en tiempo real
+
 ### Durante la ceremonia:
 
 1. **Proyectar**: Abre `/display` en el navegador conectado al proyector
    - Muestra la categoría actual y nominados
    - Se actualiza automáticamente cuando seleccionas ganadores
    - Usa los botones ← → para navegar entre categorías
+   - No requiere autenticación
 
 2. **Controlar**: Abre `/admin` en tu dispositivo (celular, tablet, laptop)
-   - Selecciona la categoría
-   - Haz click en "Seleccionar como ganador" en el nominado
-   - La pantalla `/display` se actualiza al instante con animación
-
-### Antes de la ceremonia:
-
-1. Revisa `SETUP.md` para la configuración completa
-2. Carga tus categorías y nominados en Supabase
-3. Opcionalmente, sube imágenes a Supabase Storage
+   - Gestiona ediciones, categorías, nominados y ganadores
+   - Controla qué se muestra en la pantalla de proyección
+   - Los cambios se reflejan al instante en `/display`
 
 ## 🗂️ Estructura de datos
 
@@ -104,13 +117,13 @@ Puedes editar los colores y estilos en:
 
 **Error "Invalid API key"**: Verifica que copiaste bien las credenciales en `.env.local`
 
-**No se actualiza en tiempo real**: Asegúrate de haber ejecutado el SQL que habilita realtime:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE nominees;
-ALTER PUBLICATION supabase_realtime ADD TABLE categories;
-```
+**No se actualiza en tiempo real**: Asegúrate de haber ejecutado el SQL que habilita realtime
 
 **No se ven las imágenes**: Verifica que las URLs en `image_url` sean accesibles públicamente
+
+**Error de autenticación**: Revisa la guía completa en `AUTH_SETUP.md` para configurar Google OAuth
+
+**"Dominio bloqueado"**: Edita `BLOCKED_DOMAINS` en `components/AuthGuard.tsx` para configurar qué dominios bloquear
 
 ---
 

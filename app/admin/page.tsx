@@ -74,7 +74,16 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Dashboard</h1>
+          <div className="flex items-center gap-4 mb-4">
+            <img
+              src="/logo-epamies.svg"
+              alt="LOS EPAMIES"
+              className="h-12 w-auto brightness-0 invert"
+            />
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Dashboard</h1>
+            </div>
+          </div>
           <p className="text-gray-400">Panel de administración de premios EPAMIES</p>
         </div>
 
