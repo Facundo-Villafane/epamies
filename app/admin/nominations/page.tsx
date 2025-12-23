@@ -463,7 +463,7 @@ export default function NominationsPage() {
                               )}
                             </div>
                             <div className="flex-1 relative">
-                              {nom.duo_participant2.image_url ? (
+                              {nom.duo_participant2?.image_url ? (
                                 <img src={nom.duo_participant2.image_url} alt={nom.duo_participant2.name} className="absolute inset-0 w-full h-full object-cover" />
                               ) : (
                                 <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900"></div>
@@ -473,7 +473,7 @@ export default function NominationsPage() {
                           <div className="absolute top-2 left-2 bg-pink-600 text-white text-xs px-2 py-1 rounded font-bold">DUO VOTADO</div>
                         </div>
                         <div className="p-4">
-                          <h3 className="text-lg font-bold mb-2 text-white">{nom.participant.name} & {nom.duo_participant2.name}</h3>
+                          <h3 className="text-lg font-bold mb-2 text-white">{nom.participant.name} & {nom.duo_participant2?.name}</h3>
                           <p className="text-xs text-pink-300 mb-3">Este duo fue creado por votos de usuarios</p>
                           <button onClick={() => handleRemoveNomination(nom.id)} className="w-full bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
                             <MdDelete /> Eliminar nominación
