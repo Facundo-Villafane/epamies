@@ -6,10 +6,10 @@ import { FcGoogle } from 'react-icons/fc'
 import { IoMdArrowBack } from 'react-icons/io'
 import Link from 'next/link'
 
-// Dominios bloqueados (ejemplo: dominios corporativos)
-const BLOCKED_DOMAINS = [
-  // Agrega aquí los dominios que quieres bloquear
-  // Ejemplo: 'empresa.com', 'corporativo.com'
+// Dominios bloqueados (correos corporativos)
+const BLOCKED_DOMAINS: string[] = [
+  'epam.com',
+  'xa.epicgames.com'
 ]
 
 interface AuthGuardProps {
