@@ -1,0 +1,14 @@
+# CONFIGURACIÓN DE SUPABASE
+# ========================
+#
+# Cuando cambies de PC, crea un archivo llamado ".env.local" en la raíz del proyecto
+# y copia el siguiente contenido:
+
+NEXT_PUBLIC_SUPABASE_URL=https://nkfcttdqzgyaekfiijow.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_tKT_53YBYsqFE1u233A28A_-qc9bej0
+
+# INSTRUCCIONES:
+# 1. Crea un archivo nuevo llamado: .env.local
+# 2. Copia las dos líneas de arriba (NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY)
+# 3. Guarda el archivo
+# 4. Reinicia el servidor de desarrollo (npm run dev)
