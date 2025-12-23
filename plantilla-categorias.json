@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Mr./Miss Congeniality",
+    "description": "El/la más pacífico/a y amigable.",
+    "order": 1,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Amigo/a de todos",
+    "description": "La pieza que une al grupo.",
+    "order": 2,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la que más ayuda",
+    "description": "El soporte técnico o emocional del equipo.",
+    "order": 3,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la Provider",
+    "description": "El que nunca viene con las manos vacías (comida/mate).",
+    "order": 4,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la mejor vestido/a",
+    "description": "Siempre impecable, parece que va a una gala.",
+    "order": 5,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El mejor escritorio",
+    "description": "Organizado, estético y funcional.",
+    "order": 6,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Mejor dúo",
+    "description": "Esa dupla dinámica que funciona perfecto.",
+    "order": 7,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "duo",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Rey/Reina del after",
+    "description": "El alma de la fiesta.",
+    "order": 8,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la que vive en la oficina",
+    "description": "Su compromiso (o falta de casa) es admirable.",
+    "order": 9,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Momento más memorable",
+    "description": "Ese hito que todos recordaremos por años.",
+    "order": 10,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "text_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Premio Daydreaming",
+    "description": "El/la más vago/a o distraído/a.",
+    "order": 11,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la más Ñoqui",
+    "description": "El que tiene el récord de inasistencias.",
+    "order": 12,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Mecha corta",
+    "description": "El que pierde la paciencia por una call.",
+    "order": 13,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la de los comentarios funables",
+    "description": "El que siempre está al borde de la cancelación.",
+    "order": 14,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Mister/Miss Vagabundo/a",
+    "description": "El que viene en pijama o modo \"recién levantado\".",
+    "order": 15,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Escritorio más caótico",
+    "description": "Una montaña de basura.",
+    "order": 16,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la que siempre llega tarde",
+    "description": "Su horario es \"cuando se pueda\".",
+    "order": 17,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la más ruidoso/a",
+    "description": "Lo escuchas antes de verlo entrar.",
+    "order": 18,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Momento más Cringe",
+    "description": "Ese que todos queremos borrar de la memoria.",
+    "order": 19,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "text_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Momento más WTF",
+    "description": "Una bomba que nos dejó sin palabras.",
+    "order": 20,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "text_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la más gracioso/a",
+    "description": "El que justifica su sueldo con chistes.",
+    "order": 21,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la más Troll",
+    "description": "Especialista en hacer bromas pesadas.",
+    "order": 22,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Memero/a viejo/a",
+    "description": "Memes 24/7.",
+    "order": 23,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El/la más Otaku",
+    "description": "Su fondo de pantalla lo delata.",
+    "order": 24,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Fanático/a obsesionado/a",
+    "description": "No puede pasar 5 minutos sin hablar de su obsesión.",
+    "order": 25,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "Frase más icónica",
+    "description": "La muletilla que todos terminamos copiando.",
+    "order": 26,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "text_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  },
+  {
+    "name": "El peor estornudo",
+    "description": "El que asusta a toda la cuadra.",
+    "order": 27,
+    "edition_id": "793b41fd-2202-4400-928c-eb8dc2d88c1e",
+    "category_type": "participant_based",
+    "voting_phase": 1,
+    "phase1_end_date": null,
+    "phase2_end_date": null
+  }
+]

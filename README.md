@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏆 Sistema de Premios EPAMIES
 
-## Getting Started
+Web app para ceremonias de premios estilo Oscars/GOTY con gestión en tiempo real.
 
-First, run the development server:
+## 🚀 Características
+
+- ✨ **Pantalla de proyección** (`/display`) - Vista para mostrar en la sala
+- 🎮 **Panel de control** (`/admin`) - Selecciona ganadores manualmente
+- ⚡ **Actualización en tiempo real** - Los cambios se reflejan automáticamente
+- 🎨 **UI moderna** con Tailwind CSS y efectos visuales
+- 📦 **Supabase** para base de datos, storage y realtime
+
+## 📋 Stack Técnico
+
+- **Next.js 15** con App Router
+- **TypeScript**
+- **Tailwind CSS**
+- **Supabase** (PostgreSQL + Realtime + Storage)
+
+## 🛠️ Setup Rápido
+
+### 1. Instalar dependencias
+
+Las dependencias ya están instaladas. Si necesitas reinstalar:
+
+```bash
+npm install
+```
+
+### 2. Configurar Supabase
+
+1. Crea una cuenta gratuita en [supabase.com](https://supabase.com)
+2. Crea un nuevo proyecto
+3. Ve a **SQL Editor** y ejecuta el SQL del archivo `SETUP.md` (sección 2)
+4. Ve a **Project Settings** > **API** y copia:
+   - Project URL
+   - anon public key
+
+### 3. Variables de entorno
+
+Edita el archivo `.env.local` con tus credenciales:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key-aqui
+```
+
+### 4. Ejecutar
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📖 Cómo usar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Durante la ceremonia:
 
-## Learn More
+1. **Proyectar**: Abre `/display` en el navegador conectado al proyector
+   - Muestra la categoría actual y nominados
+   - Se actualiza automáticamente cuando seleccionas ganadores
+   - Usa los botones ← → para navegar entre categorías
 
-To learn more about Next.js, take a look at the following resources:
+2. **Controlar**: Abre `/admin` en tu dispositivo (celular, tablet, laptop)
+   - Selecciona la categoría
+   - Haz click en "Seleccionar como ganador" en el nominado
+   - La pantalla `/display` se actualiza al instante con animación
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Antes de la ceremonia:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Revisa `SETUP.md` para la configuración completa
+2. Carga tus categorías y nominados en Supabase
+3. Opcionalmente, sube imágenes a Supabase Storage
 
-## Deploy on Vercel
+## 🗂️ Estructura de datos
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Tabla `categories`
+- `name`: Nombre de la categoría
+- `description`: Descripción opcional
+- `order`: Orden de aparición
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Tabla `nominees`
+- `name`: Nombre del nominado
+- `description`: Descripción opcional
+- `image_url`: URL de la imagen
+- `category_id`: Referencia a la categoría
+- `is_winner`: Si es el ganador actual
+
+## 🎨 Personalización
+
+Puedes editar los colores y estilos en:
+- `app/display/page.tsx` - Vista de proyección
+- `app/admin/page.tsx` - Panel de control
+- `app/page.tsx` - Página principal
+
+## 📚 Recursos
+
+- [Documentación de Next.js](https://nextjs.org/docs)
+- [Documentación de Supabase](https://supabase.com/docs)
+- [Guía de Tailwind CSS](https://tailwindcss.com/docs)
+
+## 🐛 Troubleshooting
+
+**Error "Invalid API key"**: Verifica que copiaste bien las credenciales en `.env.local`
+
+**No se actualiza en tiempo real**: Asegúrate de haber ejecutado el SQL que habilita realtime:
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE nominees;
+ALTER PUBLICATION supabase_realtime ADD TABLE categories;
+```
+
+**No se ven las imágenes**: Verifica que las URLs en `image_url` sean accesibles públicamente
+
+---
+
+Hecho con ❤️ para ceremonias épicas
