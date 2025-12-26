@@ -12,6 +12,7 @@ export type Edition = {
   description?: string
   year?: number
   is_active: boolean
+  current_display_category_id?: string | null
   created_at: string
 }
 

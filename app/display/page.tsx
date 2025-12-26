@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { supabase, type Category, type Participant } from '@/lib/supabase'
 import { FaTrophy } from 'react-icons/fa'
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
@@ -13,10 +13,28 @@ type NominationDisplay = {
   category_id: string
 }
 
+// Componente memoizado para el fondo - no se re-renderiza entre cambios de categoría
+const BackgroundAnimation = memo(() => (
+  <div className="fixed inset-0 z-0 opacity-30">
+    <FloatingLines
+      linesGradient={['#2DD4BF', '#8B5CF6', '#EC4899']}
+      enabledWaves={['top', 'middle', 'bottom']}
+      lineCount={[8, 10, 6]}
+      lineDistance={[8, 6, 10]}
+      animationSpeed={0.5}
+      interactive={false}
+      parallax={false}
+      mixBlendMode="screen"
+    />
+  </div>
+))
+
+BackgroundAnimation.displayName = 'BackgroundAnimation'
+
 export default function DisplayPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [allNominations, setAllNominations] = useState<NominationDisplay[]>([])
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0)
+  const [currentCategoryId, setCurrentCategoryId] = useState<string>('')
   const [editionName, setEditionName] = useState('')
 
   useEffect(() => {
@@ -32,9 +50,16 @@ export default function DisplayPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => fetchData())
       .subscribe()
 
+    // Subscribe to editions changes to get real-time category updates from admin
+    const editionsSub = supabase
+      .channel('editions-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'editions' }, () => fetchData())
+      .subscribe()
+
     return () => {
       nominationsSub.unsubscribe()
       categoriesSub.unsubscribe()
+      editionsSub.unsubscribe()
     }
   }, [])
 
@@ -53,6 +78,9 @@ export default function DisplayPage() {
       if (categoriesRes.data && categoriesRes.data.length > 0) {
         setCategories(categoriesRes.data)
 
+        // Set current category from edition or default to first
+        setCurrentCategoryId(activeEdition.data.current_display_category_id || categoriesRes.data[0].id)
+
         const nominationsRes = await supabase
           .from('nominations')
           .select(`
@@ -70,17 +98,10 @@ export default function DisplayPage() {
     }
   }
 
-  const currentCategory = categories[currentCategoryIndex]
-  const currentNominations = allNominations.filter(n => n.category_id === currentCategory?.id)
+  const currentCategory = categories.find(c => c.id === currentCategoryId)
+  const currentNominations = allNominations.filter(n => n.category_id === currentCategoryId)
   const winner = currentNominations.find(n => n.is_winner)
-
-  const nextCategory = () => {
-    setCurrentCategoryIndex((prev) => prev < categories.length - 1 ? prev + 1 : prev)
-  }
-
-  const prevCategory = () => {
-    setCurrentCategoryIndex((prev) => prev > 0 ? prev - 1 : prev)
-  }
+  const currentCategoryIndex = categories.findIndex(c => c.id === currentCategoryId)
 
   if (!currentCategory) {
     return (
@@ -95,19 +116,8 @@ export default function DisplayPage() {
 
   return (
     <div className="min-h-screen relative text-white p-8">
-      {/* Fondo animado con ondas */}
-      <div className="fixed inset-0 z-0">
-        <FloatingLines
-          linesGradient={['#2DD4BF', '#8B5CF6', '#EC4899']}
-          enabledWaves={['top', 'middle', 'bottom']}
-          lineCount={[8, 10, 6]}
-          lineDistance={[8, 6, 10]}
-          animationSpeed={0.5}
-          interactive={false}
-          parallax={false}
-          mixBlendMode="screen"
-        />
-      </div>
+      {/* Fondo animado memoizado - no se reinicia entre cambios de categoría */}
+      <BackgroundAnimation />
 
       {/* Contenido por encima del fondo */}
       <div className="relative z-10">
@@ -119,9 +129,6 @@ export default function DisplayPage() {
             className="h-20 md:h-24 w-auto brightness-0 invert"
           />
         </div>
-        {editionName && editionName !== 'LOS EPAMIES' && (
-          <h2 className="text-3xl font-bold text-white mb-2">{editionName}</h2>
-        )}
         <p className="text-xl text-gray-400">
           Categoría {currentCategoryIndex + 1} de {categories.length}
         </p>
@@ -129,7 +136,7 @@ export default function DisplayPage() {
 
       <div className="max-w-6xl mx-auto mb-12">
         <div className="bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border-2 border-cyan-500/50 backdrop-blur-md rounded-2xl p-8 mb-8">
-          <h2 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">{currentCategory.name}</h2>
+          <h2 className="text-5xl font-bold text-center mb-4 text-white">{currentCategory.name}</h2>
           {currentCategory.description && (
             <p className="text-xl text-center text-gray-300">{currentCategory.description}</p>
           )}
@@ -181,25 +188,6 @@ export default function DisplayPage() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="fixed bottom-8 right-8 flex gap-4">
-        <button
-          onClick={prevCategory}
-          disabled={currentCategoryIndex === 0}
-          className="bg-gray-900/80 hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md px-6 py-3 rounded-lg font-bold transition-all border border-cyan-500/50 flex items-center gap-2"
-        >
-          <MdNavigateBefore className="text-xl" />
-          Anterior
-        </button>
-        <button
-          onClick={nextCategory}
-          disabled={currentCategoryIndex === categories.length - 1}
-          className="bg-gray-900/80 hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md px-6 py-3 rounded-lg font-bold transition-all border border-cyan-500/50 flex items-center gap-2"
-        >
-          Siguiente
-          <MdNavigateNext className="text-xl" />
-        </button>
       </div>
       </div>
     </div>

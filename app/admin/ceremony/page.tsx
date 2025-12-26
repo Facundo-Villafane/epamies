@@ -15,19 +15,25 @@ export default function CeremonyPage() {
   const [nominations, setNominations] = useState<NominationWithData[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [loading, setLoading] = useState<string | null>(null)
+  const [editionId, setEditionId] = useState<string>('')
 
   useEffect(() => {
     fetchData()
   }, [])
 
   useEffect(() => {
-    if (selectedCategory) fetchNominations()
+    if (selectedCategory) {
+      fetchNominations()
+      updateDisplayCategory()
+    }
   }, [selectedCategory])
 
   async function fetchData() {
-    const activeEdition = await supabase.from('editions').select('id').eq('is_active', true).single()
+    const activeEdition = await supabase.from('editions').select('id, current_display_category_id').eq('is_active', true).single()
 
     if (activeEdition.data) {
+      setEditionId(activeEdition.data.id)
+
       const { data } = await supabase
         .from('categories')
         .select('*')
@@ -36,9 +42,19 @@ export default function CeremonyPage() {
 
       if (data && data.length > 0) {
         setCategories(data)
-        setSelectedCategory(data[0].id)
+        // Set to current display category or first category
+        setSelectedCategory(activeEdition.data.current_display_category_id || data[0].id)
       }
     }
+  }
+
+  async function updateDisplayCategory() {
+    if (!editionId || !selectedCategory) return
+
+    await supabase
+      .from('editions')
+      .update({ current_display_category_id: selectedCategory })
+      .eq('id', editionId)
   }
 
   async function fetchNominations() {
