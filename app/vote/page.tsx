@@ -12,6 +12,7 @@ import SpotlightCard from '@/components/SpotlightCard'
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
 import AuthGuard from '@/components/AuthGuard'
 import UserMenu from '@/components/UserMenu'
+import { useAuth } from '@/lib/useAuth'
 
 // Configuración de toast personalizada
 const toastConfig = {
@@ -45,27 +46,23 @@ type DuoVoteSelection = {
 }
 
 export default function VotePage() {
+  const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [nominations, setNominations] = useState<NominationWithVotes[]>([])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [editionName, setEditionName] = useState('')
   const [editionYear, setEditionYear] = useState(0)
   const [loading, setLoading] = useState<string | null>(null)
-  const [voterId, setVoterId] = useState('')
   const [textSubmission, setTextSubmission] = useState('')
   const [hasSubmittedText, setHasSubmittedText] = useState(false)
   // Duo selection state
   const [duoParticipant1, setDuoParticipant1] = useState<string>('')
   const [duoParticipant2, setDuoParticipant2] = useState<string>('')
 
-  useEffect(() => {
-    let id = localStorage.getItem('voter_id')
-    if (!id) {
-      id = `voter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem('voter_id', id)
-    }
-    setVoterId(id)
+  // Usar el email del usuario como identificador
+  const voterId = user?.email || ''
 
+  useEffect(() => {
     fetchData()
   }, [])
 
@@ -168,7 +165,7 @@ export default function VotePage() {
   }
 
   async function fetchNominations() {
-    if (!selectedCategory || !voterId) return
+    if (!selectedCategory) return
 
     const currentPhase = selectedCategory.voting_phase || 1
     const isDuoCategory = selectedCategory.category_type === 'duo'
@@ -189,22 +186,24 @@ export default function VotePage() {
 
     // For duo categories, check if user has voted (stored in duo_participant2_id)
     if (isDuoCategory) {
-      // Get user's duo vote from votes table
-      const { data: userVoteData } = await supabase
-        .from('votes')
-        .select('nomination_id')
-        .eq('category_id', selectedCategory.id)
-        .eq('voter_identifier', voterId)
-        .eq('voting_phase', currentPhase)
-        .limit(1)
-        .single()
+      // Get user's duo vote from votes table (only if user is logged in)
+      if (voterId) {
+        const { data: userVoteData } = await supabase
+          .from('votes')
+          .select('nomination_id')
+          .eq('category_id', selectedCategory.id)
+          .eq('voter_identifier', voterId)
+          .eq('voting_phase', currentPhase)
+          .limit(1)
+          .single()
 
-      if (userVoteData) {
-        // User has voted - find which nomination contains the duo info
-        const votedNom = nominationsData.find((n: any) => n.id === userVoteData.nomination_id)
-        if (votedNom && votedNom.duo_participant2_id) {
-          setDuoParticipant1(votedNom.participant_id)
-          setDuoParticipant2(votedNom.duo_participant2_id)
+        if (userVoteData) {
+          // User has voted - find which nomination contains the duo info
+          const votedNom = nominationsData.find((n: any) => n.id === userVoteData.nomination_id)
+          if (votedNom && votedNom.duo_participant2_id) {
+            setDuoParticipant1(votedNom.participant_id)
+            setDuoParticipant2(votedNom.duo_participant2_id)
+          }
         }
       }
 
@@ -234,7 +233,8 @@ export default function VotePage() {
 
       votesData?.forEach((vote: any) => {
         voteCounts[vote.nomination_id] = (voteCounts[vote.nomination_id] || 0) + 1
-        if (vote.voter_identifier === voterId) {
+        // Only mark as user_voted if user is logged in
+        if (voterId && vote.voter_identifier === voterId) {
           userVotes.add(vote.nomination_id)
         }
       })
