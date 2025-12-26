@@ -11,29 +11,22 @@ export default function AuthCallback() {
     // Manejar el callback de OAuth
     const handleCallback = async () => {
       try {
-        // Obtener el hash de la URL que contiene los tokens
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        const accessToken = hashParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token')
+        // Supabase maneja automáticamente el hash fragment
+        const { data, error } = await supabase.auth.getSession()
 
-        if (accessToken && refreshToken) {
-          // Establecer la sesión con los tokens
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          })
+        if (error) {
+          console.error('Error getting session:', error)
+          alert('Error al iniciar sesión. Por favor intenta de nuevo.')
+          router.push('/')
+          return
+        }
 
-          if (error) {
-            console.error('Error setting session:', error)
-            alert('Error al iniciar sesión. Por favor intenta de nuevo.')
-            router.push('/')
-            return
-          }
-
-          // Redirigir a la página de votación
+        if (data.session) {
+          // Sesión establecida correctamente
+          console.log('Sesión establecida:', data.session.user.email)
           router.push('/vote')
         } else {
-          console.error('No se encontraron tokens en la URL')
+          console.error('No se encontró sesión')
           router.push('/')
         }
       } catch (error) {
