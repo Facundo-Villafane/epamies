@@ -87,7 +87,10 @@ export default function DisplayPage() {
             id,
             is_winner,
             category_id,
-            participant:participants(*)
+            participant_id,
+            duo_participant2_id,
+            participant:participants!participant_id(*),
+            duo_participant2:participants!duo_participant2_id(*)
           `)
           .in('category_id', categoriesRes.data.map(c => c.id))
 

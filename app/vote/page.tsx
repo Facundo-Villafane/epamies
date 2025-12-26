@@ -173,7 +173,7 @@ export default function VotePage() {
     // Get nominations
     let nominationsQuery = supabase
       .from('nominations')
-      .select('id, is_finalist, category_id, participant_id, duo_participant2_id, participant:participants(*)')
+      .select('id, is_finalist, category_id, participant_id, duo_participant2_id, participant:participants!participant_id(*), duo_participant2:participants!duo_participant2_id(*)')
       .eq('category_id', selectedCategory.id)
 
     if (currentPhase === 2) {
