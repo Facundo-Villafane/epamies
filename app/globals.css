@@ -1,37 +1,7 @@
 @import "tailwindcss";
 
-/* Museo Sans Font Face Declarations */
-@font-face {
-  font-family: 'Museo Sans';
-  src: url('/fonts/Fontspring-DEMO-MuseoSans_300.otf') format('opentype');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Museo Sans';
-  src: url('/fonts/Fontspring-DEMO-MuseoSans_300_Italic.otf') format('opentype');
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Museo Sans';
-  src: url('/fonts/Fontspring-DEMO-MuseoSans_700.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Museo Sans';
-  src: url('/fonts/Fontspring-DEMO-MuseoSans_700_Italic.otf') format('opentype');
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
+/* Adobe Fonts - Museo Sans */
+@import url("https://use.typekit.net/qgh1rwk.css");
 
 :root {
   --background: #ffffff;
@@ -41,7 +11,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Museo Sans', var(--font-geist-sans), sans-serif;
+  --font-sans: "museo-sans", var(--font-geist-sans), sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -55,5 +25,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Museo Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "museo-sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 300;
 }

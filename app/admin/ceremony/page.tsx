@@ -16,6 +16,7 @@ export default function CeremonyPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [loading, setLoading] = useState<string | null>(null)
   const [editionId, setEditionId] = useState<string>('')
+  const [currentPhase, setCurrentPhase] = useState<number>(1)
 
   useEffect(() => {
     fetchData()
@@ -29,10 +30,11 @@ export default function CeremonyPage() {
   }, [selectedCategory])
 
   async function fetchData() {
-    const activeEdition = await supabase.from('editions').select('id, current_display_category_id').eq('is_active', true).single()
+    const activeEdition = await supabase.from('editions').select('id, current_display_category_id, voting_phase').eq('is_active', true).single()
 
     if (activeEdition.data) {
       setEditionId(activeEdition.data.id)
+      setCurrentPhase(activeEdition.data.voting_phase || 1)
 
       const { data } = await supabase
         .from('categories')
@@ -60,8 +62,6 @@ export default function CeremonyPage() {
   async function fetchNominations() {
     const currentCategory = categories.find(c => c.id === selectedCategory)
     if (!currentCategory) return
-
-    const currentPhase = currentCategory.voting_phase || 1
 
     // Get nominations (only finalists if phase 2)
     let query = supabase
@@ -129,7 +129,6 @@ export default function CeremonyPage() {
 
   const currentCategory = categories.find(c => c.id === selectedCategory)
   const currentWinner = nominations.find(n => n.is_winner)
-  const currentPhase = currentCategory?.voting_phase || 1
   const maxVotes = Math.max(...nominations.map(n => n.vote_count), 0)
 
   const getPhaseLabel = () => {

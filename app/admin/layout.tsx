@@ -12,7 +12,8 @@ import {
   MdHowToVote,
   MdMovie,
   MdScreenShare,
-  MdCloudUpload
+  MdCloudUpload,
+  MdSearch
 } from 'react-icons/md'
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -25,6 +26,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/nominations', label: 'Nominaciones', icon: MdStar },
     { href: '/admin/import', label: 'Importar Datos', icon: MdCloudUpload },
     { href: '/admin/voting-phases', label: 'Fases de Votación', icon: MdHowToVote },
+    { href: '/admin/votes-audit', label: 'Auditoría de Votos', icon: MdSearch },
     { href: '/admin/ceremony', label: 'Ceremonia', icon: MdMovie },
   ]
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase, type Edition } from '@/lib/supabase'
-import { MdCalendarToday, MdAdd, MdEdit, MdDelete, MdCheckCircle, MdCancel } from 'react-icons/md'
+import { MdCalendarToday, MdAdd, MdEdit, MdDelete, MdCheckCircle, MdCancel, MdHowToVote } from 'react-icons/md'
 
 export default function EditionsPage() {
   const [editions, setEditions] = useState<Edition[]>([])
@@ -84,6 +84,21 @@ export default function EditionsPage() {
   async function handleDeactivate(id: string) {
     await supabase.from('editions').update({ is_active: false }).eq('id', id)
     await fetchEditions()
+  }
+
+  async function handleChangePhase(id: string, currentPhase: number) {
+    const newPhase = currentPhase === 1 ? 2 : 1
+    const confirmed = confirm(
+      `¿Cambiar a Fase ${newPhase}?\n\n` +
+      `Fase 1: Nominación Popular (hasta 3 votos por usuario)\n` +
+      `Fase 2: Votación Final (1 voto por usuario, solo finalistas)\n\n` +
+      `Esto afectará a TODAS las categorías de esta edición.`
+    )
+
+    if (confirmed) {
+      await supabase.from('editions').update({ voting_phase: newPhase }).eq('id', id)
+      await fetchEditions()
+    }
   }
 
   function resetForm() {
@@ -185,32 +200,58 @@ export default function EditionsPage() {
                         <MdCancel /> INACTIVA
                       </span>
                     )}
+                    <span className={`${
+                      edition.voting_phase === 1
+                        ? 'bg-cyan-600'
+                        : 'bg-purple-600'
+                    } text-white text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1`}>
+                      <MdHowToVote /> FASE {edition.voting_phase || 1}
+                    </span>
                   </div>
                   {edition.description && <p className="text-gray-400 mb-2">{edition.description}</p>}
                   <p className="text-sm text-gray-500">Año: {edition.year}</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {edition.voting_phase === 1
+                      ? '📊 Fase de Nominación Popular (hasta 3 votos/usuario)'
+                      : '🏆 Fase de Votación Final (1 voto/usuario, solo finalistas)'}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  {edition.is_active ? (
-                    <button
-                      onClick={() => handleDeactivate(edition.id)}
-                      className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-                    >
-                      <MdCancel /> Desactivar
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {edition.is_active ? (
+                      <button
+                        onClick={() => handleDeactivate(edition.id)}
+                        className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                      >
+                        <MdCancel /> Desactivar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSetActive(edition.id)}
+                        className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                      >
+                        <MdCheckCircle /> Activar
+                      </button>
+                    )}
+                    <button onClick={() => startEdit(edition)} className="bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                      <MdEdit /> Editar
                     </button>
-                  ) : (
+                    <button onClick={() => handleDelete(edition.id)} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                      <MdDelete /> Eliminar
+                    </button>
+                  </div>
+                  {edition.is_active && (
                     <button
-                      onClick={() => handleSetActive(edition.id)}
-                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                      onClick={() => handleChangePhase(edition.id, edition.voting_phase || 1)}
+                      className={`${
+                        edition.voting_phase === 1
+                          ? 'bg-purple-600 hover:bg-purple-700'
+                          : 'bg-cyan-600 hover:bg-cyan-700'
+                      } px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 justify-center`}
                     >
-                      <MdCheckCircle /> Activar
+                      <MdHowToVote /> Cambiar a Fase {edition.voting_phase === 1 ? '2' : '1'}
                     </button>
                   )}
-                  <button onClick={() => startEdit(edition)} className="bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <MdEdit /> Editar
-                  </button>
-                  <button onClick={() => handleDelete(edition.id)} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <MdDelete /> Eliminar
-                  </button>
                 </div>
               </div>
             </div>

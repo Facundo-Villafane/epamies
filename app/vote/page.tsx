@@ -50,6 +50,7 @@ export default function VotePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [nominations, setNominations] = useState<NominationWithVotes[]>([])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  const [activeEdition, setActiveEdition] = useState<any>(null)
   const [editionName, setEditionName] = useState('')
   const [editionYear, setEditionYear] = useState(0)
   const [loading, setLoading] = useState<string | null>(null)
@@ -62,14 +63,17 @@ export default function VotePage() {
   // Usar el email del usuario como identificador
   const voterId = user?.email || ''
 
+  // Get current phase from edition (not category)
+  const currentPhase = activeEdition?.voting_phase || 1
+
   useEffect(() => {
     fetchData()
   }, [])
 
   useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory && activeEdition) {
       const isTextCategory = selectedCategory.category_type === 'text_based'
-      const isPhase1 = (selectedCategory.voting_phase || 1) === 1
+      const isPhase1 = currentPhase === 1
 
       if (isTextCategory && isPhase1) {
         checkTextSubmission()
@@ -81,19 +85,20 @@ export default function VotePage() {
       setDuoParticipant1('')
       setDuoParticipant2('')
     }
-  }, [selectedCategory, voterId])
+  }, [selectedCategory, voterId, currentPhase])
 
   async function fetchData() {
-    const activeEdition = await supabase.from('editions').select('*').eq('is_active', true).single()
+    const activeEditionRes = await supabase.from('editions').select('*').eq('is_active', true).single()
 
-    if (activeEdition.data) {
-      setEditionName(activeEdition.data.name)
-      setEditionYear(activeEdition.data.year)
+    if (activeEditionRes.data) {
+      setActiveEdition(activeEditionRes.data)
+      setEditionName(activeEditionRes.data.name)
+      setEditionYear(activeEditionRes.data.year)
 
       const categoriesRes = await supabase
         .from('categories')
         .select('*')
-        .eq('edition_id', activeEdition.data.id)
+        .eq('edition_id', activeEditionRes.data.id)
         .order('order')
 
       if (categoriesRes.data) {
@@ -167,7 +172,6 @@ export default function VotePage() {
   async function fetchNominations() {
     if (!selectedCategory) return
 
-    const currentPhase = selectedCategory.voting_phase || 1
     const isDuoCategory = selectedCategory.category_type === 'duo'
 
     // Get nominations
@@ -284,7 +288,6 @@ export default function VotePage() {
       return
     }
 
-    const currentPhase = selectedCategory.voting_phase || 1
     setLoading('duo-vote')
 
     try {
@@ -374,7 +377,6 @@ export default function VotePage() {
   async function handleVote(nominationId: string) {
     if (!selectedCategory) return
 
-    const currentPhase = selectedCategory.voting_phase || 1
     setLoading(nominationId)
 
     try {
@@ -479,7 +481,6 @@ export default function VotePage() {
     }
   }
 
-  const currentPhase = selectedCategory?.voting_phase || 1
   const isDuoCategory = selectedCategory?.category_type === 'duo'
   const userVoteCount = isDuoCategory
     ? (duoParticipant1 && duoParticipant2 ? 1 : 0)
@@ -587,7 +588,7 @@ export default function VotePage() {
 
   // Check if text_based category in Phase 1
   const isTextCategory = selectedCategory?.category_type === 'text_based'
-  const isPhase1 = (selectedCategory?.voting_phase || 1) === 1
+  const isPhase1 = currentPhase === 1
   const showTextInput = isTextCategory && isPhase1
 
   // Vista: Nominados de la categoría seleccionada
@@ -901,10 +902,10 @@ export default function VotePage() {
                   {loading === nomination.id
                     ? 'Procesando...'
                     : nomination.user_voted
-                    ? '✓ VOTING CLOSED'
+                    ? '✓ VOTADO'
                     : currentPhase === 1 && userVoteCount >= 3
                     ? 'Máximo alcanzado'
-                    : 'VOTING CLOSED'}
+                    : 'VOTAR'}
                 </button>
               </div>
             </div>

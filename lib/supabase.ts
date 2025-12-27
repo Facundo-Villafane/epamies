@@ -13,6 +13,9 @@ export type Edition = {
   year?: number
   is_active: boolean
   current_display_category_id?: string | null
+  voting_phase: number // 1 = Nominación, 2 = Final
+  phase1_end_date?: string | null
+  phase2_end_date?: string | null
   created_at: string
 }
 
