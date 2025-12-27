@@ -824,29 +824,42 @@ export default function VotePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {nominations.map((nomination) => (
-            <button
+            <div
               key={nomination.id}
-              onClick={() => handleVote(nomination.id)}
-              disabled={loading === nomination.id || (currentPhase === 1 && !nomination.user_voted && userVoteCount >= 3)}
-              className={`group relative aspect-[3/4] rounded-2xl overflow-hidden transition-all duration-300 ${
+              className={`group relative aspect-[3/4] rounded-xl overflow-hidden transition-all duration-500 ${
                 nomination.user_voted
-                  ? 'ring-4 ring-cyan-400 scale-105'
-                  : 'border-4 border-slate-700 hover:border-cyan-400 hover:scale-105'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  ? 'ring-4 ring-cyan-400'
+                  : 'border-2 border-gray-800'
+              }`}
             >
-              {/* Image */}
+              {/* Image - Grayscale by default, color on hover */}
               {nomination.participant.image_url ? (
                 <img
                   src={nomination.participant.image_url}
                   alt={nomination.participant.name}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                    nomination.user_voted
+                      ? 'grayscale-0'
+                      : 'grayscale group-hover:grayscale-0'
+                  }`}
                 />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900"></div>
+                <div className={`absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 transition-all duration-500 ${
+                  nomination.user_voted
+                    ? 'grayscale-0'
+                    : 'grayscale group-hover:grayscale-0'
+                }`}></div>
               )}
 
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+              {/* Dark overlay - Reduces on hover */}
+              <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${
+                nomination.user_voted
+                  ? 'opacity-0'
+                  : 'opacity-40 group-hover:opacity-0'
+              }`}></div>
+
+              {/* Gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
 
               {/* Winner badge (if finalist in phase 2) */}
               {nomination.is_finalist && currentPhase === 2 && (
@@ -863,32 +876,38 @@ export default function VotePage() {
               )}
 
               {/* Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <h3 className="text-2xl font-black text-white mb-2">
-                  {nomination.participant.name}
-                </h3>
-                {nomination.participant.description && (
-                  <p className="text-sm text-slate-300 line-clamp-2">
-                    {nomination.participant.description}
-                  </p>
-                )}
+              <div className="absolute bottom-0 left-0 right-0">
+                <div className="p-6 pb-0">
+                  <h3 className="text-2xl font-black text-white mb-1 uppercase">
+                    {nomination.participant.name}
+                  </h3>
+                  {nomination.participant.description && (
+                    <p className="text-sm text-gray-300 line-clamp-2 mb-4">
+                      {nomination.participant.description}
+                    </p>
+                  )}
+                </div>
 
-                {/* Vote button overlay */}
-                <div className={`mt-4 py-2 px-4 rounded-lg text-sm font-bold text-center transition-all ${
-                  nomination.user_voted
-                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
-                    : 'bg-white/20 backdrop-blur-sm text-white group-hover:bg-gradient-to-r group-hover:from-cyan-400 group-hover:to-purple-500'
-                }`}>
+                {/* Vote button - Full width, square corners on bottom */}
+                <button
+                  onClick={() => handleVote(nomination.id)}
+                  disabled={loading === nomination.id || (currentPhase === 1 && !nomination.user_voted && userVoteCount >= 3)}
+                  className={`w-full py-4 text-lg font-black uppercase tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    nomination.user_voted
+                      ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                      : 'bg-black/60 backdrop-blur-md text-white border-t-2 border-gray-800/50 group-hover:bg-gradient-to-r group-hover:from-cyan-400 group-hover:to-purple-500 group-hover:border-transparent'
+                  }`}
+                >
                   {loading === nomination.id
                     ? 'Procesando...'
                     : nomination.user_voted
-                    ? currentPhase === 1 ? 'Click para desmarcar' : 'Click para cambiar voto'
+                    ? '✓ VOTING CLOSED'
                     : currentPhase === 1 && userVoteCount >= 3
                     ? 'Máximo alcanzado'
-                    : 'VOTAR'}
-                </div>
+                    : 'VOTING CLOSED'}
+                </button>
               </div>
-            </button>
+            </div>
           ))}
           </div>
         )}
