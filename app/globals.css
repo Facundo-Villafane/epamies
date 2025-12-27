@@ -1,7 +1,7 @@
-@import "tailwindcss";
-
 /* Adobe Fonts - Museo Sans */
 @import url("https://use.typekit.net/qgh1rwk.css");
+
+@import "tailwindcss";
 
 :root {
   --background: #ffffff;

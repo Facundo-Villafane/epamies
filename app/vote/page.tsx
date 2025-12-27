@@ -59,6 +59,8 @@ export default function VotePage() {
   // Duo selection state
   const [duoParticipant1, setDuoParticipant1] = useState<string>('')
   const [duoParticipant2, setDuoParticipant2] = useState<string>('')
+  // Track which categories user has voted in
+  const [votedCategoryIds, setVotedCategoryIds] = useState<Set<string>>(new Set())
 
   // Usar el email del usuario como identificador
   const voterId = user?.email || ''
@@ -69,6 +71,12 @@ export default function VotePage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    if (voterId && categories.length > 0 && activeEdition) {
+      checkVotedCategories()
+    }
+  }, [voterId, categories, currentPhase])
 
   useEffect(() => {
     if (selectedCategory && activeEdition) {
@@ -105,6 +113,33 @@ export default function VotePage() {
         setCategories(categoriesRes.data)
       }
     }
+  }
+
+  async function checkVotedCategories() {
+    if (!voterId || categories.length === 0) return
+
+    const categoryIds = categories.map(c => c.id)
+
+    // Check votes table for this user in current phase
+    const { data: votesData } = await supabase
+      .from('votes')
+      .select('category_id')
+      .eq('voter_identifier', voterId)
+      .eq('voting_phase', currentPhase)
+      .in('category_id', categoryIds)
+
+    // Check text submissions for text-based categories
+    const { data: textData } = await supabase
+      .from('text_submissions')
+      .select('category_id')
+      .eq('user_id', voterId)
+      .in('category_id', categoryIds)
+
+    const votedIds = new Set<string>()
+    votesData?.forEach((v: any) => votedIds.add(v.category_id))
+    textData?.forEach((t: any) => votedIds.add(t.category_id))
+
+    setVotedCategoryIds(votedIds)
   }
 
   async function checkTextSubmission() {
@@ -152,6 +187,8 @@ export default function VotePage() {
 
       setHasSubmittedText(true)
       toast.success('✅ Tu respuesta ha sido guardada!', toastConfig)
+      // Update voted categories list
+      await checkVotedCategories()
     } catch (error) {
       console.error('Error submitting text:', error)
       toast.error('Error al guardar tu respuesta. Intenta de nuevo.', {
@@ -222,6 +259,14 @@ export default function VotePage() {
       }))
 
       setNominations(nominationsWithVotes)
+
+      // Preload images
+      nominationsWithVotes.forEach((nom: any) => {
+        if (nom.participant.image_url) {
+          const img = new Image()
+          img.src = nom.participant.image_url
+        }
+      })
     } else {
       // Normal category logic
       const nominationIds = nominationsData.map((n: any) => n.id)
@@ -253,6 +298,14 @@ export default function VotePage() {
       }))
 
       setNominations(nominationsWithVotes)
+
+      // Preload images
+      nominationsWithVotes.forEach((nom: any) => {
+        if (nom.participant.image_url) {
+          const img = new Image()
+          img.src = nom.participant.image_url
+        }
+      })
     }
   }
 
@@ -356,6 +409,8 @@ export default function VotePage() {
       })
 
       await fetchNominations()
+      // Update voted categories list
+      await checkVotedCategories()
     } catch (error) {
       console.error('Error voting:', error)
       toast.error('Error al votar. Intenta de nuevo.', {
@@ -463,6 +518,8 @@ export default function VotePage() {
       }
 
       await fetchNominations()
+      // Update voted categories list
+      await checkVotedCategories()
     } catch (error) {
       console.error('Error voting:', error)
       toast.error('Error al votar. Intenta de nuevo.', {
@@ -540,37 +597,45 @@ export default function VotePage() {
 
         {/* Categories Grid */}
         <div className="container mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {categories.map((category) => (
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+            {categories.map((category) => {
+              const hasVoted = votedCategoryIds.has(category.id)
+              return (
               <SpotlightCard
                 key={category.id}
                 onClick={() => setSelectedCategory(category)}
                 spotlightColor="rgba(139, 92, 246, 0.4)"
-                className="group cursor-pointer aspect-[3/4] rounded-xl border-2 border-gray-800 hover:border-cyan-400 transition-all duration-300 hover:scale-105"
+                className={`group cursor-pointer aspect-[4/1] md:aspect-square rounded-xl border-2 transition-all duration-300 ${
+                  hasVoted
+                    ? 'border-cyan-400 hover:border-cyan-300'
+                    : 'border-gray-800 opacity-50 hover:opacity-100 hover:border-gray-600'
+                } hover:scale-105`}
               >
-                {/* Background - Softer color with alpha */}
-                <div className="absolute inset-0 bg-black/70 group-hover:bg-black/60 transition-colors -z-10"></div>
+                {/* Background - Dimmed if not voted */}
+                <div className={`absolute inset-0 transition-colors -z-10 ${
+                  hasVoted
+                    ? 'bg-black/70 group-hover:bg-black/60'
+                    : 'bg-black/80 group-hover:bg-black/70'
+                }`}></div>
 
                 {/* Content */}
-                <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                <div className="relative h-full flex flex-col items-center justify-center p-3 md:p-4 text-center">
+                  <h3 className={`text-base md:text-sm lg:text-base font-black uppercase tracking-tight leading-tight transition-colors ${
+                    hasVoted ? 'text-cyan-300' : 'text-gray-400 group-hover:text-gray-300'
+                  }`}>
                     {category.name}
                   </h3>
-                  {category.description && (
-                    <p className="mt-3 text-sm text-cyan-100 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {category.description}
-                    </p>
-                  )}
                 </div>
 
-                {/* Bottom badge */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-4 py-1.5 rounded-full border border-cyan-400/50">
-                  <p className="text-xs font-bold whitespace-nowrap text-cyan-300">
-                    VOTAR
-                  </p>
-                </div>
+                {/* Checkmark for voted categories */}
+                {hasVoted && (
+                  <div className="absolute top-2 right-2 bg-cyan-400 rounded-full p-1">
+                    <IoMdCheckmark className="text-black text-xs" />
+                  </div>
+                )}
               </SpotlightCard>
-            ))}
+            )})}
+
           </div>
 
           {categories.length === 0 && (
@@ -607,46 +672,76 @@ export default function VotePage() {
 
       {/* Contenido por encima del fondo */}
       <div className="relative z-10">
-      {/* Header */}
-      <div className="relative border-b border-gray-800">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-between mb-6">
+      {/* Sticky Top Navigation Bar */}
+      <div className="sticky top-0 z-50 bg-black/70 backdrop-blur-xl border-b border-white/20">
+        <div className="container mx-auto px-4 md:px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* EXIT button - Desktop only */}
             <button
               onClick={() => setSelectedCategory(null)}
-              className="inline-flex items-center gap-2 text-white hover:text-gray-300 transition-colors text-lg"
+              className="hidden md:flex items-center gap-1 text-white hover:text-gray-300 transition-colors text-xs font-bold uppercase"
             >
-              <IoMdArrowBack /> Ver todas
+              <IoMdArrowBack className="text-base" /> EXIT
             </button>
-            <UserMenu />
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-black mb-2 text-white uppercase">
-                {selectedCategory.name}
-              </h1>
-              {selectedCategory.description && (
-                <p className="text-lg text-gray-400">{selectedCategory.description}</p>
-              )}
-              {isTextCategory && (
-                <div className="mt-3 inline-block bg-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold">
-                  CATEGORÍA DE TEXTO LIBRE
-                </div>
-              )}
+            {/* Category info and navigation */}
+            <div className="flex items-center gap-3 md:gap-6 flex-1 md:absolute md:left-1/2 md:-translate-x-1/2">
+              <button
+                onClick={() => {
+                  const currentIndex = categories.findIndex(c => c.id === selectedCategory.id)
+                  if (currentIndex > 0) {
+                    setSelectedCategory(categories[currentIndex - 1])
+                  }
+                }}
+                disabled={categories.findIndex(c => c.id === selectedCategory.id) === 0}
+                className="flex items-center gap-1 text-white hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase"
+              >
+                <MdNavigateBefore className="text-lg" /> <span className="hidden sm:inline">PREVIOUS</span>
+              </button>
+
+              <div className="text-center flex-1 md:flex-initial">
+                <h1 className="text-sm md:text-base font-bold text-white uppercase truncate max-w-[200px] md:max-w-none">
+                  {selectedCategory.name}
+                </h1>
+              </div>
+
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="hidden md:inline text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase whitespace-nowrap"
+              >
+                VIEW ALL
+              </button>
+
+              <button
+                onClick={() => {
+                  const currentIndex = categories.findIndex(c => c.id === selectedCategory.id)
+                  if (currentIndex < categories.length - 1) {
+                    setSelectedCategory(categories[currentIndex + 1])
+                  }
+                }}
+                disabled={categories.findIndex(c => c.id === selectedCategory.id) === categories.length - 1}
+                className="flex items-center gap-1 text-white hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase"
+              >
+                <span className="hidden sm:inline">NEXT</span> <MdNavigateNext className="text-lg" />
+              </button>
             </div>
 
-            {!showTextInput && (
-              <div className="text-right">
-                <div className="inline-block bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-400 rounded-lg px-6 py-3">
-                  <p className="text-sm mb-1 text-cyan-300">
+            {/* Vote counter and user menu */}
+            <div className="flex items-center gap-3">
+              {!showTextInput && (
+                <div className="bg-white/5 border border-white/10 rounded px-2 py-1 md:px-3 md:py-1.5">
+                  <p className="text-xs text-gray-400 hidden md:block">
                     {currentPhase === 1 ? 'Votos emitidos' : 'Tu voto'}
                   </p>
-                  <p className="text-3xl font-black text-white">
+                  <p className="text-sm md:text-lg font-bold text-white">
                     {userVoteCount}/{maxVotes}
                   </p>
                 </div>
+              )}
+              <div className="hidden md:block">
+                <UserMenu />
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -778,7 +873,7 @@ export default function VotePage() {
             <div className="mb-4">
               <h3 className="text-xl font-bold text-gray-400 mb-4 text-center">Participantes Disponibles</h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               {nominations.map((nomination) => {
                 const isSelected = nomination.participant.id === duoParticipant1 || nomination.participant.id === duoParticipant2
                 return (
@@ -823,90 +918,73 @@ export default function VotePage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-8">
             {nominations.map((nomination) => (
             <div
               key={nomination.id}
-              className={`group relative aspect-[3/4] rounded-xl overflow-hidden transition-all duration-500 ${
-                nomination.user_voted
-                  ? 'ring-4 ring-cyan-400'
-                  : 'border-2 border-gray-800'
-              }`}
+              className="group"
             >
-              {/* Image - Grayscale by default, color on hover */}
-              {nomination.participant.image_url ? (
-                <img
-                  src={nomination.participant.image_url}
-                  alt={nomination.participant.name}
-                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+              {/* Image card */}
+              <div className={`aspect-[3/4] rounded-t-xl overflow-hidden transition-all duration-500 relative ${
+                nomination.user_voted
+                  ? 'ring-4 ring-cyan-400 ring-b-0'
+                  : 'border-2 border-b-0 border-gray-800'
+              }`}>
+                {/* Image - Grayscale by default, color on hover */}
+                {nomination.participant.image_url ? (
+                  <img
+                    src={nomination.participant.image_url}
+                    alt={nomination.participant.name}
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                      nomination.user_voted
+                        ? 'grayscale-0'
+                        : 'grayscale group-hover:grayscale-0'
+                    }`}
+                  />
+                ) : (
+                  <div className={`absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 transition-all duration-500 ${
                     nomination.user_voted
                       ? 'grayscale-0'
                       : 'grayscale group-hover:grayscale-0'
-                  }`}
-                />
-              ) : (
-                <div className={`absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 transition-all duration-500 ${
+                  }`}></div>
+                )}
+
+                {/* Dark overlay - Reduces on hover */}
+                <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${
                   nomination.user_voted
-                    ? 'grayscale-0'
-                    : 'grayscale group-hover:grayscale-0'
+                    ? 'opacity-0'
+                    : 'opacity-40 group-hover:opacity-0'
                 }`}></div>
-              )}
+              </div>
 
-              {/* Dark overlay - Reduces on hover */}
-              <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${
-                nomination.user_voted
-                  ? 'opacity-0'
-                  : 'opacity-40 group-hover:opacity-0'
-              }`}></div>
+              {/* Vote button */}
+              <button
+                onClick={() => handleVote(nomination.id)}
+                disabled={loading === nomination.id || (currentPhase === 1 && !nomination.user_voted && userVoteCount >= 3)}
+                className={`w-full py-3 md:py-4 text-sm md:text-base font-bold uppercase tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  nomination.user_voted
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                    : 'bg-black/60 backdrop-blur-md text-white border-2 border-t-0 border-gray-800 group-hover:bg-gradient-to-r group-hover:from-cyan-400 group-hover:to-purple-500 group-hover:border-cyan-400'
+                }`}
+              >
+                {loading === nomination.id
+                  ? 'Procesando...'
+                  : nomination.user_voted
+                  ? '✓ VOTADO'
+                  : currentPhase === 1 && userVoteCount >= 3
+                  ? 'Máximo alcanzado'
+                  : 'VOTAR'}
+              </button>
 
-              {/* Gradient overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-
-              {/* Winner badge (if finalist in phase 2) */}
-              {nomination.is_finalist && currentPhase === 2 && (
-                <div className="absolute top-4 left-4 bg-gradient-to-r from-cyan-400 to-purple-500 text-white px-3 py-1.5 rounded-full font-black text-sm flex items-center gap-1">
-                  <FaTrophy /> FINALISTA
-                </div>
-              )}
-
-              {/* Voted badge */}
-              {nomination.user_voted && (
-                <div className="absolute top-4 right-4 bg-cyan-500 text-black px-3 py-1.5 rounded-full font-black text-sm flex items-center gap-1">
-                  <IoMdCheckmark /> VOTADO
-                </div>
-              )}
-
-              {/* Content */}
-              <div className="absolute bottom-0 left-0 right-0">
-                <div className="p-6 pb-0">
-                  <h3 className="text-2xl font-black text-white mb-1 uppercase">
-                    {nomination.participant.name}
-                  </h3>
-                  {nomination.participant.description && (
-                    <p className="text-sm text-gray-300 line-clamp-2 mb-4">
-                      {nomination.participant.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Vote button - Full width, square corners on bottom */}
-                <button
-                  onClick={() => handleVote(nomination.id)}
-                  disabled={loading === nomination.id || (currentPhase === 1 && !nomination.user_voted && userVoteCount >= 3)}
-                  className={`w-full py-4 text-lg font-black uppercase tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    nomination.user_voted
-                      ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
-                      : 'bg-black/60 backdrop-blur-md text-white border-t-2 border-gray-800/50 group-hover:bg-gradient-to-r group-hover:from-cyan-400 group-hover:to-purple-500 group-hover:border-transparent'
-                  }`}
-                >
-                  {loading === nomination.id
-                    ? 'Procesando...'
-                    : nomination.user_voted
-                    ? '✓ VOTADO'
-                    : currentPhase === 1 && userVoteCount >= 3
-                    ? 'Máximo alcanzado'
-                    : 'VOTAR'}
-                </button>
+              {/* Participant name below button */}
+              <div className="mt-3">
+                <h3 className={`text-sm md:text-base font-medium text-center uppercase tracking-tight transition-colors ${
+                  nomination.user_voted
+                    ? 'text-white'
+                    : 'text-gray-400 group-hover:text-white'
+                }`}>
+                  {nomination.participant.name}
+                </h3>
               </div>
             </div>
           ))}
@@ -918,36 +996,6 @@ export default function VotePage() {
             <p className="text-2xl text-gray-400">No hay nominados en esta categoría</p>
           </div>
         )}
-      </div>
-
-      {/* Fixed Category Navigation - Bottom Right */}
-      <div className="fixed bottom-8 right-8 flex gap-4 z-20">
-        <button
-          onClick={() => {
-            const currentIndex = categories.findIndex(c => c.id === selectedCategory.id)
-            if (currentIndex > 0) {
-              setSelectedCategory(categories[currentIndex - 1])
-            }
-          }}
-          disabled={categories.findIndex(c => c.id === selectedCategory.id) === 0}
-          className="bg-gray-900/80 hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md px-6 py-3 rounded-lg font-bold transition-all border border-cyan-500/50 flex items-center gap-2 text-white"
-        >
-          <MdNavigateBefore className="text-xl" />
-          Anterior
-        </button>
-        <button
-          onClick={() => {
-            const currentIndex = categories.findIndex(c => c.id === selectedCategory.id)
-            if (currentIndex < categories.length - 1) {
-              setSelectedCategory(categories[currentIndex + 1])
-            }
-          }}
-          disabled={categories.findIndex(c => c.id === selectedCategory.id) === categories.length - 1}
-          className="bg-gray-900/80 hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md px-6 py-3 rounded-lg font-bold transition-all border border-cyan-500/50 flex items-center gap-2 text-white"
-        >
-          Siguiente
-          <MdNavigateNext className="text-xl" />
-        </button>
       </div>
 
       <ToastContainer />
