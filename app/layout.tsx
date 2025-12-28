@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Los Epamies - Premios de la Comunidad",
-  description: "Vota por tus favoritos en Los Epamies, los premios de la comunidad donde reconocemos a los mejores participantes en diferentes categorías.",
+  title: "Los Epamies - Premios de la Oficina",
+  description: "Vota por tus compañeros favoritos en Los Epamies, los premios anuales de la oficina donde reconocemos a los mejores en diferentes categorías.",
   icons: {
     icon: [
       { url: '/favicon_io/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -24,22 +24,22 @@ export const metadata: Metadata = {
     apple: '/favicon_io/apple-touch-icon.png',
   },
   openGraph: {
-    title: "Los Epamies - Premios de la Comunidad",
-    description: "Vota por tus favoritos en Los Epamies, los premios de la comunidad donde reconocemos a los mejores participantes en diferentes categorías.",
+    title: "Los Epamies - Premios de la Oficina",
+    description: "Vota por tus compañeros favoritos en Los Epamies, los premios anuales de la oficina donde reconocemos a los mejores en diferentes categorías.",
     images: [
       {
         url: '/ChatGPT Image Dec 27, 2025, 12_59_32 PM.png',
         width: 1200,
         height: 630,
-        alt: 'Los Epamies - Premios de la Comunidad',
+        alt: 'Los Epamies - Premios de la Oficina',
       }
     ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Los Epamies - Premios de la Comunidad",
-    description: "Vota por tus favoritos en Los Epamies, los premios de la comunidad donde reconocemos a los mejores participantes en diferentes categorías.",
+    title: "Los Epamies - Premios de la Oficina",
+    description: "Vota por tus compañeros favoritos en Los Epamies, los premios anuales de la oficina donde reconocemos a los mejores en diferentes categorías.",
     images: ['/ChatGPT Image Dec 27, 2025, 12_59_32 PM.png'],
   },
 };
