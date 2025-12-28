@@ -345,38 +345,36 @@ export default function VotePage() {
 
     try {
       // Check if user already voted
-      const { data: existingVote } = await supabase
+      const { data: existingVotes } = await supabase
         .from('votes')
         .select('id, nomination_id')
         .eq('category_id', selectedCategory.id)
         .eq('voter_identifier', voterId)
         .eq('voting_phase', currentPhase)
-        .limit(1)
-        .single()
 
-      if (existingVote) {
-        // Remove previous vote
+      if (existingVotes && existingVotes.length > 0) {
+        // Remove previous vote(s)
         await supabase
           .from('votes')
           .delete()
-          .eq('id', existingVote.id)
+          .eq('category_id', selectedCategory.id)
+          .eq('voter_identifier', voterId)
+          .eq('voting_phase', currentPhase)
       }
 
       // Find or create a nomination that matches this duo combination
       // First, try to find existing nomination with these exact participants
-      const { data: existingNom } = await supabase
+      const { data: existingNoms } = await supabase
         .from('nominations')
         .select('id')
         .eq('category_id', selectedCategory.id)
         .eq('participant_id', duoParticipant1)
         .eq('duo_participant2_id', duoParticipant2)
-        .limit(1)
-        .single()
 
       let nominationId: string
 
-      if (existingNom) {
-        nominationId = existingNom.id
+      if (existingNoms && existingNoms.length > 0) {
+        nominationId = existingNoms[0].id
       } else {
         // Create new nomination for this duo combination
         const { data: newNom, error: insertError } = await supabase
