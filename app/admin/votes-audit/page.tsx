@@ -32,10 +32,49 @@ export default function VotesAuditPage() {
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
   const [searchEmail, setSearchEmail] = useState('')
   const [loading, setLoading] = useState(true)
+  const [deletingUser, setDeletingUser] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
   }, [selectedCategory, selectedPhase])
+
+  async function handleDeleteUser(email: string, voteCount: number) {
+    const confirmed = confirm(
+      `¿Estás seguro de que quieres eliminar todos los votos de ${email}?\n\n` +
+      `Se eliminarán ${voteCount} voto${voteCount !== 1 ? 's' : ''} de forma permanente.\n\n` +
+      `Esta acción NO se puede deshacer.`
+    )
+
+    if (!confirmed) return
+
+    setDeletingUser(email)
+
+    try {
+      // Delete all votes from this user
+      const { error } = await supabase
+        .from('votes')
+        .delete()
+        .eq('voter_identifier', email)
+
+      if (error) throw error
+
+      // Also delete text submissions if any
+      await supabase
+        .from('text_submissions')
+        .delete()
+        .eq('user_id', email)
+
+      alert(`✅ Se eliminaron todos los votos de ${email}`)
+
+      // Refresh data
+      await fetchData()
+    } catch (error) {
+      console.error('Error deleting user votes:', error)
+      alert('❌ Error al eliminar los votos. Intenta de nuevo.')
+    } finally {
+      setDeletingUser(null)
+    }
+  }
 
   async function fetchData() {
     setLoading(true)
@@ -217,11 +256,20 @@ export default function VotesAuditPage() {
                       <h3 className="text-lg font-bold text-white">{email}</h3>
                       <p className="text-sm text-gray-400">{userVotes.length} voto{userVotes.length !== 1 ? 's' : ''}</p>
                     </div>
-                    {userVotes.length > 10 && (
-                      <div className="bg-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-                        ⚠️ SOSPECHOSO ({userVotes.length} votos)
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {userVotes.length > 10 && (
+                        <div className="bg-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                          ⚠️ SOSPECHOSO ({userVotes.length} votos)
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleDeleteUser(email, userVotes.length)}
+                        disabled={deletingUser === email}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+                      >
+                        {deletingUser === email ? 'Eliminando...' : '🗑️ Eliminar Usuario'}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
