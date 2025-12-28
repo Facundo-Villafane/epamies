@@ -293,7 +293,7 @@ export default function VotesAuditPage() {
                                 <> & {vote.nomination.duo_participant2.name}</>
                               )}
                             </p>
-                            <p className="text-xs text-gray-400 truncate">{vote.nomination.category.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{vote.category.name}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                                 vote.voting_phase === 1
