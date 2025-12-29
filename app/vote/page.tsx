@@ -148,6 +148,12 @@ export default function VotePage() {
       const isTextCategory = selectedCategory.category_type === 'text_based'
       const isPhase1 = currentPhase === 1
 
+      // Reset text submission state when category changes
+      setTextSubmission('')
+      setHasSubmittedText(false)
+      setShowAiSuggestion(false)
+      setAiOptions([])
+
       if (isTextCategory && isPhase1) {
         checkTextSubmission()
       } else {
@@ -215,12 +221,18 @@ export default function VotePage() {
   async function checkTextSubmission() {
     if (!selectedCategory || !voterId) return
 
-    // RLS policies automatically filter by auth.email()
-    const { data } = await supabase
+    // RLS policies automatically filter by auth.email(), but we also add user_id for consistency
+    const { data, error } = await supabase
       .from('text_submissions')
       .select('submission_text')
       .eq('category_id', selectedCategory.id)
+      .eq('user_id', voterId)
       .maybeSingle()
+
+    if (error) {
+      console.error('Error loading text submission:', error)
+      return
+    }
 
     if (data) {
       setTextSubmission(data.submission_text)
@@ -299,6 +311,9 @@ export default function VotePage() {
 
     setLoading('text')
 
+    // Save the current text before submission
+    const submittedText = textSubmission
+
     try {
       // Insert new submission (no updates allowed)
       const { error: insertError } = await supabase
@@ -306,7 +321,7 @@ export default function VotePage() {
         .insert({
           category_id: selectedCategory.id,
           user_id: voterId,
-          submission_text: textSubmission
+          submission_text: submittedText
         })
 
       if (insertError) {
@@ -314,12 +329,15 @@ export default function VotePage() {
         throw insertError
       }
 
+      // Set states to reflect successful submission
       setHasSubmittedText(true)
+      // Keep the text visible - don't clear it
+      setTextSubmission(submittedText)
+
       toast.success('✅ Tu respuesta ha sido guardada!', toastConfig)
+
       // Update voted categories list
       await checkVotedCategories()
-      // Reload the text submission to ensure UI is in sync with DB
-      await checkTextSubmission()
     } catch (error: any) {
       console.error('Error submitting text:', error)
       console.error('Error details:', {
