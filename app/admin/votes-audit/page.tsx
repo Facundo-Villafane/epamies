@@ -226,20 +226,22 @@ export default function VotesAuditPage() {
     ])
 
     // Cast the data to match our types (Supabase returns arrays for relations)
-    const formattedVotes = (votesData || []).map((vote: any) => ({
-      ...vote,
-      nomination: Array.isArray(vote.nomination) ? vote.nomination[0] : vote.nomination,
-      category: Array.isArray(vote.category) ? vote.category[0] : vote.category,
-      nomination: {
-        ...(Array.isArray(vote.nomination) ? vote.nomination[0] : vote.nomination),
-        participant: Array.isArray(vote.nomination?.participant)
-          ? vote.nomination.participant[0]
-          : vote.nomination?.participant,
-        duo_participant2: Array.isArray(vote.nomination?.duo_participant2)
-          ? vote.nomination.duo_participant2[0]
-          : vote.nomination?.duo_participant2
+    const formattedVotes = (votesData || []).map((vote: any) => {
+      const nomination = Array.isArray(vote.nomination) ? vote.nomination[0] : vote.nomination
+      return {
+        ...vote,
+        category: Array.isArray(vote.category) ? vote.category[0] : vote.category,
+        nomination: {
+          ...nomination,
+          participant: Array.isArray(nomination?.participant)
+            ? nomination.participant[0]
+            : nomination?.participant,
+          duo_participant2: Array.isArray(nomination?.duo_participant2)
+            ? nomination.duo_participant2[0]
+            : nomination?.duo_participant2
+        }
       }
-    }))
+    })
 
     const formattedText = (textData || []).map((text: any) => ({
       ...text,
