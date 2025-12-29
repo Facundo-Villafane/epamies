@@ -225,8 +225,29 @@ export default function VotesAuditPage() {
       textQuery
     ])
 
-    setVotes(votesData || [])
-    setTextSubmissions(textData || [])
+    // Cast the data to match our types (Supabase returns arrays for relations)
+    const formattedVotes = (votesData || []).map((vote: any) => ({
+      ...vote,
+      nomination: Array.isArray(vote.nomination) ? vote.nomination[0] : vote.nomination,
+      category: Array.isArray(vote.category) ? vote.category[0] : vote.category,
+      nomination: {
+        ...(Array.isArray(vote.nomination) ? vote.nomination[0] : vote.nomination),
+        participant: Array.isArray(vote.nomination?.participant)
+          ? vote.nomination.participant[0]
+          : vote.nomination?.participant,
+        duo_participant2: Array.isArray(vote.nomination?.duo_participant2)
+          ? vote.nomination.duo_participant2[0]
+          : vote.nomination?.duo_participant2
+      }
+    }))
+
+    const formattedText = (textData || []).map((text: any) => ({
+      ...text,
+      category: Array.isArray(text.category) ? text.category[0] : text.category
+    }))
+
+    setVotes(formattedVotes as VoteRecord[])
+    setTextSubmissions(formattedText as TextSubmission[])
     setLoading(false)
   }
 
