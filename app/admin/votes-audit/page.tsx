@@ -306,7 +306,7 @@ export default function VotesAuditPage() {
                 <option value="all">Todas las categorías</option>
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
-                    {category.name} ({category.type === 'text' ? 'Texto' : 'Votación'})
+                    {category.name} ({category.category_type === 'text_based' ? 'Texto' : 'Votación'})
                   </option>
                 ))}
               </select>
