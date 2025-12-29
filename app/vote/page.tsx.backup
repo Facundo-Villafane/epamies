@@ -362,8 +362,6 @@ export default function VotePage() {
     // For duo categories, check if user has voted
     if (isDuoCategory) {
       // Get user's duo vote from votes table (only if user is logged in)
-      let userVotedNominationId: string | null = null
-
       if (voterId) {
         const { data: userVoteData } = await supabase
           .from('votes')
@@ -377,7 +375,6 @@ export default function VotePage() {
         if (userVoteData) {
           // User has voted - mark as voted and restore selection
           setHasVotedDuo(true)
-          userVotedNominationId = userVoteData.nomination_id
 
           // Find which nomination contains the duo info
           const votedNom = nominationsData.find((n: any) => n.id === userVoteData.nomination_id)
@@ -420,7 +417,7 @@ export default function VotePage() {
         category_id: nom.category_id,
         is_finalist: nom.is_finalist,
         vote_count: 0,
-        user_voted: userVotedNominationId === nom.id
+        user_voted: false
       }))
 
       setNominations(nominationsWithVotes)
@@ -1233,29 +1230,10 @@ export default function VotePage() {
                 {nominations.map((nomination) => {
                   // Parse duo data from description if it's a virtual duo participant
                   let duoData = null
-                  const isVirtualDuo = nomination.participant.name.includes(' & ')
-
-                  if (isVirtualDuo) {
-                    try {
-                      duoData = JSON.parse(nomination.participant.description || '{}')
-                    } catch (e) {
-                      // Not JSON, ignore
-                    }
-                  }
-
-                  // Determine duo names
-                  let duoName1 = ''
-                  let duoName2 = ''
-
-                  if (nomination.duo_participant2) {
-                    // Real duo - has duo_participant2
-                    duoName1 = nomination.participant.name
-                    duoName2 = nomination.duo_participant2.name
-                  } else if (isVirtualDuo) {
-                    // Virtual duo - parse from name
-                    const parts = nomination.participant.name.split(' & ')
-                    duoName1 = parts[0] || ''
-                    duoName2 = parts[1] || ''
+                  try {
+                    duoData = JSON.parse(nomination.participant.description || '{}')
+                  } catch (e) {
+                    // Not JSON, ignore
                   }
 
                   return (
@@ -1267,56 +1245,43 @@ export default function VotePage() {
                           : 'border-2 border-b-0 border-gray-800'
                       }`}>
                         {/* 50/50 Split Images */}
-                        {nomination.duo_participant2 ? (
-                          // Real duo - render with direct image URLs
-                          <div className="absolute inset-0 flex">
-                            {/* Left half - Participant 1 */}
-                            <div className="w-1/2 relative overflow-hidden">
-                              {nomination.participant.image_url ? (
-                                <img
-                                  src={nomination.participant.image_url}
-                                  alt={nomination.participant.name}
-                                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-                                    nomination.user_voted
-                                      ? 'grayscale-0'
-                                      : 'grayscale group-hover:grayscale-0'
-                                  }`}
-                                  style={{ objectPosition: 'center' }}
-                                />
-                              ) : (
-                                <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900"></div>
-                              )}
-                            </div>
-
-                            {/* Right half - Participant 2 */}
-                            <div className="w-1/2 relative overflow-hidden">
-                              {nomination.duo_participant2.image_url ? (
-                                <img
-                                  src={nomination.duo_participant2.image_url}
-                                  alt={nomination.duo_participant2.name}
-                                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-                                    nomination.user_voted
-                                      ? 'grayscale-0'
-                                      : 'grayscale group-hover:grayscale-0'
-                                  }`}
-                                  style={{ objectPosition: 'center' }}
-                                />
-                              ) : (
-                                <div className="absolute inset-0 bg-gradient-to-br from-purple-700 to-purple-900"></div>
-                              )}
-                            </div>
+                        <div className="absolute inset-0 flex">
+                          {/* Left half - Participant 1 */}
+                          <div className="w-1/2 relative overflow-hidden">
+                            {nomination.participant.image_url ? (
+                              <img
+                                src={nomination.participant.image_url}
+                                alt={nomination.participant.name}
+                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                                  nomination.user_voted
+                                    ? 'grayscale-0'
+                                    : 'grayscale group-hover:grayscale-0'
+                                }`}
+                                style={{ objectPosition: 'center' }}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900"></div>
+                            )}
                           </div>
-                        ) : duoData?.participant1_id && duoData?.participant2_id ? (
-                          // Virtual duo - use DuoImage component to fetch images
-                          <DuoImage
-                            participant1Id={duoData.participant1_id}
-                            participant2Id={duoData.participant2_id}
-                            userVoted={nomination.user_voted}
-                          />
-                        ) : (
-                          // Fallback - no images available
-                          <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-purple-900"></div>
-                        )}
+
+                          {/* Right half - Participant 2 */}
+                          <div className="w-1/2 relative overflow-hidden">
+                            {nomination.duo_participant2?.image_url ? (
+                              <img
+                                src={nomination.duo_participant2.image_url}
+                                alt={nomination.duo_participant2.name}
+                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                                  nomination.user_voted
+                                    ? 'grayscale-0'
+                                    : 'grayscale group-hover:grayscale-0'
+                                }`}
+                                style={{ objectPosition: 'center' }}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-purple-700 to-purple-900"></div>
+                            )}
+                          </div>
+                        </div>
 
                         {/* Dark overlay - Reduces on hover */}
                         <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${
@@ -1353,12 +1318,11 @@ export default function VotePage() {
                             ? 'text-white'
                             : 'text-gray-400 group-hover:text-white'
                         }`}>
-                          {duoName1} & {duoName2}
+                          {nomination.participant.name} & {nomination.duo_participant2?.name}
                         </h3>
                       </div>
                     </div>
-                  )
-                })}
+                  ))}
               </div>
             </div>
           )

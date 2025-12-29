@@ -129,7 +129,7 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-2xl font-bold mb-4 text-white">Acciones rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Link href="/admin/editions">
               <button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
                 <div className="text-2xl mb-2"><MdAdd /></div>
@@ -144,8 +144,22 @@ export default function AdminDashboard() {
                 <div className="text-sm text-purple-100">Añadir nuevo participante</div>
               </button>
             </Link>
+            <Link href="/admin/finalists">
+              <button className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
+                <div className="text-2xl mb-2"><FaTrophy /></div>
+                <div className="font-bold">Gestionar Finalistas</div>
+                <div className="text-sm text-yellow-100">Marcar top 4 para Fase 2</div>
+              </button>
+            </Link>
+            <Link href="/admin/text-finalists">
+              <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
+                <div className="text-2xl mb-2"><MdTextFields /></div>
+                <div className="font-bold">Finalistas de Texto</div>
+                <div className="text-sm text-cyan-100">Generar top 4 con IA uwu</div>
+              </button>
+            </Link>
             <Link href="/admin/ceremony">
-              <button className="w-full bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-500 hover:to-purple-600 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
+              <button className="w-full bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
                 <div className="text-2xl mb-2"><MdMovie /></div>
                 <div className="font-bold">Iniciar Ceremonia</div>
                 <div className="text-sm text-purple-100">Seleccionar ganadores en vivo</div>

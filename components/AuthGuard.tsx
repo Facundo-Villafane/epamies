@@ -99,12 +99,6 @@ export default function AuthGuard({ children }: AuthGuardProps) {
               <FcGoogle className="text-2xl" />
               <span>Continuar con Google</span>
             </button>
-
-            <div className="mt-6 p-4 bg-cyan-500/10 border border-cyan-400/30 rounded-lg">
-              <p className="text-sm text-cyan-200 text-center">
-                ⚠️ No uses tu correo corporativo. Solo correos personales de Gmail son permitidos.
-              </p>
-            </div>
           </div>
 
           <div className="mt-6 text-center">
