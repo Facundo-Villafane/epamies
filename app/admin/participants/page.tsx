@@ -9,6 +9,61 @@ type ParticipantWithStats = Participant & {
   categories: string[]
 }
 
+// Component to display duo participants with split images
+function DuoImageAdmin({ participant1Id, participant2Id }: { participant1Id: string, participant2Id: string }) {
+  const [images, setImages] = useState<{ img1: string | null, img2: string | null }>({ img1: null, img2: null })
+
+  useEffect(() => {
+    async function fetchImages() {
+      const { data: p1 } = await supabase
+        .from('participants')
+        .select('image_url')
+        .eq('id', participant1Id)
+        .single()
+
+      const { data: p2 } = await supabase
+        .from('participants')
+        .select('image_url')
+        .eq('id', participant2Id)
+        .single()
+
+      setImages({
+        img1: p1?.image_url || null,
+        img2: p2?.image_url || null
+      })
+    }
+
+    fetchImages()
+  }, [participant1Id, participant2Id])
+
+  return (
+    <div className="relative w-full h-48">
+      {/* Left half - Person 1 */}
+      {images.img1 && (
+        <img
+          src={images.img1}
+          alt="Participant 1"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ clipPath: 'inset(0 50% 0 0)' }}
+        />
+      )}
+
+      {/* Right half - Person 2 */}
+      {images.img2 && (
+        <img
+          src={images.img2}
+          alt="Participant 2"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ clipPath: 'inset(0 0 0 50%)' }}
+        />
+      )}
+
+      {/* Divider line in the middle */}
+      <div className="absolute inset-y-0 left-1/2 w-0.5 bg-gradient-to-b from-cyan-400/50 via-purple-500/50 to-cyan-400/50 -translate-x-1/2 z-10"></div>
+    </div>
+  )
+}
+
 export default function ParticipantsPage() {
   const [participants, setParticipants] = useState<ParticipantWithStats[]>([])
   const [editions, setEditions] = useState<Edition[]>([])
@@ -522,11 +577,29 @@ export default function ParticipantsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredParticipants.map((participant) => (
+          {filteredParticipants.map((participant) => {
+            // Check if this is a duo participant
+            const isDuo = participant.name.includes(' & ')
+            let duoData = null
+
+            if (isDuo) {
+              try {
+                duoData = JSON.parse(participant.description || '{}')
+              } catch (e) {
+                // Not valid JSON
+              }
+            }
+
+            return (
             <div key={participant.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-cyan-500/50 transition-all">
-              {participant.image_url && (
+              {isDuo && duoData?.type === 'duo' ? (
+                <DuoImageAdmin
+                  participant1Id={duoData.participant1_id}
+                  participant2Id={duoData.participant2_id}
+                />
+              ) : participant.image_url ? (
                 <img src={participant.image_url} alt={participant.name} className="w-full h-48 object-cover" />
-              )}
+              ) : null}
               <div className="p-4">
                 <h3 className="text-xl font-bold mb-2 text-white">{participant.name}</h3>
                 {participant.description && <p className="text-gray-400 text-sm mb-2">{participant.description}</p>}
@@ -563,7 +636,8 @@ export default function ParticipantsPage() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
           {filteredParticipants.length === 0 && (
             <div className="col-span-3 text-center py-12 text-gray-500 bg-gray-900 border border-gray-800 rounded-xl">
               {searchTerm ? 'No se encontraron participantes' : 'No hay participantes. Crea uno para empezar.'}

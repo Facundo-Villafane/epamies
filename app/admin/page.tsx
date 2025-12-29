@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase, type Edition, type Category, type Participant } from '@/lib/supabase'
-import { MdCalendarToday, MdPeople, MdStar, MdAdd, MdMovie } from 'react-icons/md'
+import { MdCalendarToday, MdPeople, MdStar, MdAdd, MdMovie, MdTextFields } from 'react-icons/md'
 import { FaTrophy, FaArrowRight } from 'react-icons/fa'
 
 export default function AdminDashboard() {

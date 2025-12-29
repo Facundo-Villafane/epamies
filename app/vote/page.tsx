@@ -5,6 +5,7 @@ import { supabase, type Category, type Participant } from '@/lib/supabase'
 import Link from 'next/link'
 import { IoMdArrowBack, IoMdSearch, IoMdCheckmark, IoMdShare } from 'react-icons/io'
 import { FaTrophy, FaStar } from 'react-icons/fa'
+import { RiQuillPenAiLine } from 'react-icons/ri'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import Aurora from '@/components/Aurora'
@@ -45,6 +46,64 @@ type DuoVoteSelection = {
   participant2_id: string
 }
 
+// Component to display duo participants with split images
+function DuoImage({ participant1Id, participant2Id, userVoted }: { participant1Id: string, participant2Id: string, userVoted: boolean }) {
+  const [images, setImages] = useState<{ img1: string | null, img2: string | null }>({ img1: null, img2: null })
+
+  useEffect(() => {
+    async function fetchImages() {
+      // Fetch both participants
+      const { data: p1 } = await supabase
+        .from('participants')
+        .select('image_url')
+        .eq('id', participant1Id)
+        .single()
+
+      const { data: p2 } = await supabase
+        .from('participants')
+        .select('image_url')
+        .eq('id', participant2Id)
+        .single()
+
+      setImages({
+        img1: p1?.image_url || null,
+        img2: p2?.image_url || null
+      })
+    }
+
+    fetchImages()
+  }, [participant1Id, participant2Id])
+
+  const grayscaleClass = userVoted ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'
+
+  return (
+    <div className="absolute inset-0 w-full h-full">
+      {/* Left half - Person 1 */}
+      {images.img1 && (
+        <img
+          src={images.img1}
+          alt="Participant 1"
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${grayscaleClass}`}
+          style={{ clipPath: 'inset(0 50% 0 0)' }}
+        />
+      )}
+
+      {/* Right half - Person 2 */}
+      {images.img2 && (
+        <img
+          src={images.img2}
+          alt="Participant 2"
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${grayscaleClass}`}
+          style={{ clipPath: 'inset(0 0 0 50%)' }}
+        />
+      )}
+
+      {/* Divider line in the middle */}
+      <div className="absolute inset-y-0 left-1/2 w-0.5 bg-gradient-to-b from-cyan-400/50 via-purple-500/50 to-cyan-400/50 -translate-x-1/2 z-10"></div>
+    </div>
+  )
+}
+
 export default function VotePage() {
   const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
@@ -56,9 +115,13 @@ export default function VotePage() {
   const [loading, setLoading] = useState<string | null>(null)
   const [textSubmission, setTextSubmission] = useState('')
   const [hasSubmittedText, setHasSubmittedText] = useState(false)
+  const [aiOptions, setAiOptions] = useState<Array<{id: number, text: string}>>([])
+  const [isRewriting, setIsRewriting] = useState(false)
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false)
   // Duo selection state
   const [duoParticipant1, setDuoParticipant1] = useState<string>('')
   const [duoParticipant2, setDuoParticipant2] = useState<string>('')
+  const [hasVotedDuo, setHasVotedDuo] = useState(false)
   // Track which categories user has voted in
   const [votedCategoryIds, setVotedCategoryIds] = useState<Set<string>>(new Set())
 
@@ -129,10 +192,10 @@ export default function VotePage() {
       .in('category_id', categoryIds)
 
     // Check text submissions for text-based categories
+    // RLS policies automatically filter by auth.email(), no need to add user_id filter
     const { data: textData } = await supabase
       .from('text_submissions')
       .select('category_id')
-      .eq('user_id', voterId)
       .in('category_id', categoryIds)
 
     const votedIds = new Set<string>()
@@ -145,12 +208,12 @@ export default function VotePage() {
   async function checkTextSubmission() {
     if (!selectedCategory || !voterId) return
 
+    // RLS policies automatically filter by auth.email()
     const { data } = await supabase
       .from('text_submissions')
       .select('submission_text')
       .eq('category_id', selectedCategory.id)
-      .eq('user_id', voterId)
-      .single()
+      .maybeSingle()
 
     if (data) {
       setTextSubmission(data.submission_text)
@@ -161,37 +224,102 @@ export default function VotePage() {
     }
   }
 
+  async function handleAiRewrite() {
+    if (!textSubmission.trim() || isRewriting) return
+
+    setIsRewriting(true)
+    setShowAiSuggestion(false)
+
+    try {
+      const response = await fetch('/api/ai-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: textSubmission,
+          userEmail: voterId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.error || 'Error al reescribir con IA. Intenta de nuevo.'
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      setAiOptions(data.options)
+      setShowAiSuggestion(true)
+    } catch (error: any) {
+      console.error('AI rewrite error:', error)
+      toast.error(error.message || 'Error al reescribir con IA. Intenta de nuevo.', {
+        ...toastConfig,
+        autoClose: 6000,
+        style: {
+          background: 'linear-gradient(to right, rgb(220 38 38 / 0.9), rgb(239 68 68 / 0.9))',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: '1px solid rgb(220 38 38 / 0.3)',
+        }
+      })
+    } finally {
+      setIsRewriting(false)
+    }
+  }
+
+  function handleUseAiOption(text: string) {
+    setTextSubmission(text)
+    setShowAiSuggestion(false)
+    setAiOptions([])
+  }
+
   async function handleTextSubmission() {
     if (!selectedCategory || !voterId || !textSubmission.trim()) return
+
+    // Prevent submission if already submitted (no updates allowed)
+    if (hasSubmittedText) {
+      toast.error('Ya enviaste tu respuesta para esta categoría. No se permiten modificaciones.', {
+        ...toastConfig,
+        autoClose: 4000,
+        style: {
+          background: 'linear-gradient(to right, rgb(220 38 38 / 0.9), rgb(239 68 68 / 0.9))',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: '1px solid rgb(220 38 38 / 0.3)',
+        }
+      })
+      return
+    }
 
     setLoading('text')
 
     try {
-      if (hasSubmittedText) {
-        // Update existing submission
-        await supabase
-          .from('text_submissions')
-          .update({ submission_text: textSubmission })
-          .eq('category_id', selectedCategory.id)
-          .eq('user_id', voterId)
-      } else {
-        // Insert new submission
-        await supabase
-          .from('text_submissions')
-          .insert([{
-            category_id: selectedCategory.id,
-            user_id: voterId,
-            submission_text: textSubmission
-          }])
+      // Insert new submission (no updates allowed)
+      const { error: insertError } = await supabase
+        .from('text_submissions')
+        .insert({
+          category_id: selectedCategory.id,
+          user_id: voterId,
+          submission_text: textSubmission
+        })
+
+      if (insertError) {
+        console.error('Insert error:', insertError)
+        throw insertError
       }
 
       setHasSubmittedText(true)
       toast.success('✅ Tu respuesta ha sido guardada!', toastConfig)
       // Update voted categories list
       await checkVotedCategories()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting text:', error)
-      toast.error('Error al guardar tu respuesta. Intenta de nuevo.', {
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      toast.error(`Error al guardar: ${error.message || 'Intenta de nuevo'}`, {
         ...toastConfig,
         autoClose: 4000,
         style: {
@@ -225,7 +353,7 @@ export default function VotePage() {
 
     if (!nominationsData) return
 
-    // For duo categories, check if user has voted (stored in duo_participant2_id)
+    // For duo categories, check if user has voted
     if (isDuoCategory) {
       // Get user's duo vote from votes table (only if user is logged in)
       if (voterId) {
@@ -236,20 +364,43 @@ export default function VotePage() {
           .eq('voter_identifier', voterId)
           .eq('voting_phase', currentPhase)
           .limit(1)
-          .single()
+          .maybeSingle()
 
         if (userVoteData) {
-          // User has voted - find which nomination contains the duo info
+          // User has voted - mark as voted and restore selection
+          setHasVotedDuo(true)
+
+          // Find which nomination contains the duo info
           const votedNom = nominationsData.find((n: any) => n.id === userVoteData.nomination_id)
-          if (votedNom && votedNom.duo_participant2_id) {
-            setDuoParticipant1(votedNom.participant_id)
-            setDuoParticipant2(votedNom.duo_participant2_id)
+          if (votedNom && votedNom.participant) {
+            // Try to extract participant IDs from description (for duo participants)
+            try {
+              const descriptionData = JSON.parse(votedNom.participant.description || '{}')
+              if (descriptionData.type === 'duo') {
+                setDuoParticipant1(descriptionData.participant1_id)
+                setDuoParticipant2(descriptionData.participant2_id)
+              }
+            } catch (e) {
+              // If description is not JSON or doesn't have duo info, ignore
+              console.log('Could not parse duo participant data')
+            }
           }
+        } else {
+          setHasVotedDuo(false)
         }
+      } else {
+        setHasVotedDuo(false)
       }
 
-      // For duo categories, just show participants (no vote counts displayed)
-      const nominationsWithVotes = nominationsData.map((nom: any) => ({
+      // For duo categories in phase 1, filter out duo participants (those with "&" in name)
+      // Only show individual participants that can be selected
+      let filteredNominations = nominationsData
+      if (currentPhase === 1) {
+        // Only show individual participants, not duo combinations
+        filteredNominations = nominationsData.filter((nom: any) => !nom.participant.name.includes(' & '))
+      }
+
+      const nominationsWithVotes = filteredNominations.map((nom: any) => ({
         id: nom.id,
         participant: nom.participant,
         category_id: nom.category_id,
@@ -362,34 +513,87 @@ export default function VotePage() {
           .eq('voting_phase', currentPhase)
       }
 
-      // Find or create a nomination that matches this duo combination
-      // First, try to find existing nomination with these exact participants
-      const { data: existingNoms } = await supabase
+      // Get participant names to create duo name
+      const { data: participant1Data } = await supabase
+        .from('participants')
+        .select('name, image_url')
+        .eq('id', duoParticipant1)
+        .single()
+
+      const { data: participant2Data } = await supabase
+        .from('participants')
+        .select('name, image_url')
+        .eq('id', duoParticipant2)
+        .single()
+
+      if (!participant1Data || !participant2Data) {
+        throw new Error('No se encontraron los participantes')
+      }
+
+      // Create duo name (sorted alphabetically to ensure consistency)
+      const names = [participant1Data.name, participant2Data.name].sort()
+      const duoName = `${names[0]} & ${names[1]}`
+
+      // Check if a duo participant already exists with this name
+      const { data: existingDuoParticipant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('name', duoName)
+        .limit(1)
+        .maybeSingle()
+
+      let duoParticipantId: string
+
+      if (existingDuoParticipant) {
+        duoParticipantId = existingDuoParticipant.id
+      } else {
+        // Create new duo participant with IDs stored in description
+        const { data: newDuoParticipant, error: duoError } = await supabase
+          .from('participants')
+          .insert([{
+            name: duoName,
+            image_url: participant1Data.image_url || participant2Data.image_url,
+            description: JSON.stringify({
+              type: 'duo',
+              participant1_id: duoParticipant1,
+              participant2_id: duoParticipant2
+            })
+          }])
+          .select('id')
+          .single()
+
+        if (duoError) throw duoError
+        duoParticipantId = newDuoParticipant.id
+      }
+
+      // Now find or create nomination with this duo participant
+      const { data: existingNom } = await supabase
         .from('nominations')
         .select('id')
         .eq('category_id', selectedCategory.id)
-        .eq('participant_id', duoParticipant1)
-        .eq('duo_participant2_id', duoParticipant2)
+        .eq('participant_id', duoParticipantId)
+        .limit(1)
+        .maybeSingle()
 
       let nominationId: string
 
-      if (existingNoms && existingNoms.length > 0) {
-        nominationId = existingNoms[0].id
+      if (existingNom) {
+        nominationId = existingNom.id
       } else {
-        // Create new nomination for this duo combination
-        const { data: newNom, error: insertError } = await supabase
+        // Create new nomination for this duo
+        const { data: newNom, error: nomError } = await supabase
           .from('nominations')
           .insert([{
             category_id: selectedCategory.id,
-            participant_id: duoParticipant1,
-            duo_participant2_id: duoParticipant2,
+            participant_id: duoParticipantId,
+            duo_participant2_id: null, // Not used for duo participants
             is_winner: false,
             is_finalist: false
           }])
           .select('id')
           .single()
 
-        if (insertError) throw insertError
+        if (nomError) throw nomError
         nominationId = newNom.id
       }
 
@@ -748,32 +952,93 @@ export default function VotePage() {
       <div className="container mx-auto px-6 py-12">
         {showTextInput ? (
           <div className="max-w-3xl mx-auto">
-            <div className="bg-gradient-to-r from-orange-900/30 to-yellow-900/30 border border-orange-500/50 rounded-xl p-8">
-              <h2 className="text-3xl font-bold text-white mb-4">Escribe tu respuesta</h2>
-              <p className="text-gray-300 mb-6">
-                En esta categoría, queremos que compartas tu opinión escribiendo texto libre.
-                {hasSubmittedText && ' Puedes editar tu respuesta en cualquier momento.'}
-              </p>
+            <div className="bg-gradient-to-br from-cyan-900/30 to-purple-900/30 border-2 border-cyan-500/50 rounded-2xl p-8">
+              <div className="text-center mb-6">
+                <FaStar className="text-cyan-400 text-5xl mx-auto mb-4" />
+                <h2 className="text-3xl font-bold text-white mb-2">Escribe tu respuesta</h2>
+                <p className="text-cyan-200">
+                  En esta categoría, queremos que compartas tu opinión escribiendo texto libre.
+                </p>
+              </div>
 
-              <textarea
-                value={textSubmission}
-                onChange={(e) => setTextSubmission(e.target.value)}
-                placeholder="Escribe aquí tu respuesta..."
-                className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-orange-500 resize-none"
-                rows={8}
-                maxLength={500}
-              />
+              <div className="relative">
+                <textarea
+                  value={textSubmission}
+                  onChange={(e) => {
+                    setTextSubmission(e.target.value)
+                    // Hide AI suggestion when user types
+                    if (showAiSuggestion) {
+                      setShowAiSuggestion(false)
+                    }
+                  }}
+                  placeholder="Escribe aquí tu respuesta..."
+                  disabled={hasSubmittedText}
+                  className="w-full bg-gray-900/80 border-2 border-cyan-500/50 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 resize-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  rows={8}
+                  maxLength={500}
+                />
+
+                {/* AI Rewrite Button - appears when there's text and hasn't submitted yet */}
+                {textSubmission.trim() && !showAiSuggestion && !hasSubmittedText && (
+                  <button
+                    onClick={handleAiRewrite}
+                    disabled={isRewriting}
+                    className="absolute bottom-3 right-3 bg-purple-600/80 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 backdrop-blur-sm"
+                    title="Reescribir con IA"
+                  >
+                    <RiQuillPenAiLine className={`text-lg ${isRewriting ? 'animate-pulse' : ''}`} />
+                    {isRewriting ? 'Reescribiendo...' : 'Mejorar 😏'}
+                  </button>
+                )}
+              </div>
+
+              {/* AI Options - Show 3 options */}
+              {showAiSuggestion && aiOptions.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <RiQuillPenAiLine className="text-purple-400 text-xl" />
+                    <h3 className="font-bold text-purple-300">Sugerencias de IA</h3>
+                    <button
+                      onClick={() => {
+                        setShowAiSuggestion(false)
+                        setAiOptions([])
+                      }}
+                      className="ml-auto text-gray-400 hover:text-white text-sm transition-colors"
+                    >
+                      Cerrar ✕
+                    </button>
+                  </div>
+
+                  {aiOptions.map((option) => (
+                    <div
+                      key={option.id}
+                      className="bg-purple-900/30 border-2 border-purple-500/50 rounded-xl p-4 hover:border-purple-400 transition-all animate-in fade-in duration-300"
+                    >
+                      <div className="mb-3">
+                        <h4 className="font-bold text-purple-300 mb-2">Opción {option.id}</h4>
+                        <p className="text-white text-sm leading-relaxed">{option.text}</p>
+                      </div>
+                      <button
+                        onClick={() => handleUseAiOption(option.text)}
+                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold px-4 py-2 rounded-lg transition-all"
+                      >
+                        ✨ Usar esta opción
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-cyan-300">
                   {textSubmission.length}/500 caracteres
                 </span>
                 <button
                   onClick={handleTextSubmission}
-                  disabled={loading === 'text' || !textSubmission.trim()}
-                  className="bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-lg transition-all"
+                  disabled={loading === 'text' || !textSubmission.trim() || hasSubmittedText}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-lg transition-all"
                 >
-                  {loading === 'text' ? 'Guardando...' : hasSubmittedText ? 'Actualizar respuesta' : 'Enviar respuesta'}
+                  {loading === 'text' ? 'Guardando...' : hasSubmittedText ? '✓ Respuesta enviada' : 'Enviar respuesta'}
                 </button>
               </div>
 
@@ -805,7 +1070,8 @@ export default function VotePage() {
                   <select
                     value={duoParticipant1}
                     onChange={(e) => setDuoParticipant1(e.target.value)}
-                    className="w-full bg-gray-900 border-2 border-cyan-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors"
+                    disabled={hasVotedDuo}
+                    className="w-full bg-gray-900 border-2 border-cyan-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Selecciona...</option>
                     {nominations.map(nom => (
@@ -828,7 +1094,8 @@ export default function VotePage() {
                   <select
                     value={duoParticipant2}
                     onChange={(e) => setDuoParticipant2(e.target.value)}
-                    className="w-full bg-gray-900 border-2 border-cyan-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors"
+                    disabled={hasVotedDuo}
+                    className="w-full bg-gray-900 border-2 border-cyan-500/50 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Selecciona...</option>
                     {nominations.map(nom => (
@@ -844,14 +1111,25 @@ export default function VotePage() {
                 </div>
               </div>
 
-              {/* Vote Button */}
-              <button
-                onClick={handleDuoVote}
-                disabled={loading === 'duo-vote' || !duoParticipant1 || !duoParticipant2}
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-lg px-8 py-4 rounded-lg transition-all transform hover:scale-105"
-              >
-                {loading === 'duo-vote' ? 'Procesando...' : 'VOTAR POR ESTE DUO'}
-              </button>
+              {/* Vote Button or Confirmation */}
+              {hasVotedDuo ? (
+                <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-4 text-center">
+                  <p className="text-green-300 font-bold">
+                    ✅ Ya votaste por este duo
+                  </p>
+                  <p className="text-green-200 text-sm mt-2">
+                    Tu voto ha sido registrado exitosamente
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={handleDuoVote}
+                  disabled={loading === 'duo-vote' || !duoParticipant1 || !duoParticipant2}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-lg px-8 py-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  {loading === 'duo-vote' ? 'Procesando...' : 'VOTAR POR ESTE DUO'}
+                </button>
+              )}
 
               {/* Show current selection */}
               {duoParticipant1 && duoParticipant2 && (
@@ -930,15 +1208,49 @@ export default function VotePage() {
               }`}>
                 {/* Image - Grayscale by default, color on hover */}
                 {nomination.participant.image_url ? (
-                  <img
-                    src={nomination.participant.image_url}
-                    alt={nomination.participant.name}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-                      nomination.user_voted
-                        ? 'grayscale-0'
-                        : 'grayscale group-hover:grayscale-0'
-                    }`}
-                  />
+                  (() => {
+                    // Check if this is a duo participant
+                    const isDuo = nomination.participant.name.includes(' & ')
+                    let duoData = null
+
+                    if (isDuo) {
+                      try {
+                        duoData = JSON.parse(nomination.participant.description || '{}')
+                      } catch (e) {
+                        // Not valid JSON, treat as regular participant
+                      }
+                    }
+
+                    // If it's a duo with valid data, we need to fetch both images
+                    // For now, we'll use the stored image_url as fallback
+                    if (isDuo && duoData?.type === 'duo') {
+                      // We need to get both participant images
+                      // This will be handled via state/effect
+                      return (
+                        <div className="absolute inset-0">
+                          {/* We'll render split images here */}
+                          <DuoImage
+                            participant1Id={duoData.participant1_id}
+                            participant2Id={duoData.participant2_id}
+                            userVoted={nomination.user_voted}
+                          />
+                        </div>
+                      )
+                    }
+
+                    // Regular single participant
+                    return (
+                      <img
+                        src={nomination.participant.image_url}
+                        alt={nomination.participant.name}
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                          nomination.user_voted
+                            ? 'grayscale-0'
+                            : 'grayscale group-hover:grayscale-0'
+                        }`}
+                      />
+                    )
+                  })()
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 transition-all duration-500 ${
                     nomination.user_voted
