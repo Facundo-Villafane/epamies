@@ -384,7 +384,8 @@ export default function VotePage() {
           if (votedNom && votedNom.participant) {
             // Try to extract participant IDs from description (for duo participants)
             try {
-              const descriptionData = JSON.parse(votedNom.participant.description || '{}')
+              const participant = Array.isArray(votedNom.participant) ? votedNom.participant[0] : votedNom.participant
+              const descriptionData = JSON.parse(participant?.description || '{}')
               if (descriptionData.type === 'duo') {
                 setDuoParticipant1(descriptionData.participant1_id)
                 setDuoParticipant2(descriptionData.participant2_id)
