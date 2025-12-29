@@ -70,10 +70,47 @@ export default function VotingPhasesPage() {
     }
   }
 
+  async function setGlobalPhase(phase: number) {
+    if (!selectedEdition) return
+
+    const edition = editions.find(e => e.id === selectedEdition)
+    if (!edition) return
+
+    let confirmMessage = ''
+    if (phase === 0) confirmMessage = '¿Cerrar Fase 1 y mostrar pantalla de espera? Los usuarios NO podrán votar hasta que actives la Fase 2.'
+    else if (phase === 1) confirmMessage = '¿Activar Fase 1? Los usuarios podrán votar por 3 nominados.'
+    else if (phase === 2) confirmMessage = '¿Activar Fase 2? Los usuarios podrán votar SOLO por los finalistas.'
+    else if (phase === 3) confirmMessage = '¿Cerrar Fase 2 y mostrar pantalla de espera? Los usuarios esperarán la ceremonia.'
+    else if (phase === 4) confirmMessage = '¿Activar Ceremonia? Los usuarios podrán ver los resultados finales.'
+
+    if (!confirm(confirmMessage)) return
+
+    setLoading('global')
+    try {
+      await supabase.from('editions').update({ voting_phase: phase }).eq('id', selectedEdition)
+      await fetchData()
+      alert('✅ Fase global actualizada correctamente!')
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al actualizar fase global')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   const getPhaseLabel = (phase: number) => {
     if (phase === 1) return { text: 'Fase 1: Nominación', color: 'bg-cyan-600' }
     if (phase === 2) return { text: 'Fase 2: Final (Top 4)', color: 'bg-purple-600' }
     return { text: 'Sin fase', color: 'bg-gray-600' }
+  }
+
+  const getGlobalPhaseLabel = (phase: number) => {
+    if (phase === 0) return { text: '⏸️ Fase 1 Cerrada (Esperando Fase 2)', color: 'bg-orange-600', icon: '⏸️' }
+    if (phase === 1) return { text: '▶️ Fase 1: Votación Activa', color: 'bg-cyan-600', icon: '▶️' }
+    if (phase === 2) return { text: '▶️ Fase 2: Final Activa (Top 4)', color: 'bg-purple-600', icon: '▶️' }
+    if (phase === 3) return { text: '⏸️ Fase 2 Cerrada (Esperando Ceremonia)', color: 'bg-orange-600', icon: '⏸️' }
+    if (phase === 4) return { text: '🎉 Ceremonia / Resultados', color: 'bg-green-600', icon: '🎉' }
+    return { text: 'Sin definir', color: 'bg-gray-600', icon: '❓' }
   }
 
   return (
@@ -112,6 +149,83 @@ export default function VotingPhasesPage() {
             ))}
           </select>
         </div>
+
+        {/* Control de Fase Global */}
+        {selectedEdition && (() => {
+          const currentEdition = editions.find(e => e.id === selectedEdition)
+          if (!currentEdition) return null
+          const currentPhase = currentEdition.voting_phase || 1
+          const phaseInfo = getGlobalPhaseLabel(currentPhase)
+
+          return (
+            <div className="mb-8 p-6 bg-gradient-to-r from-cyan-900/20 to-purple-900/20 border-2 border-cyan-500/50 rounded-xl">
+              <h2 className="text-2xl font-bold mb-4 text-white flex items-center gap-3">
+                <MdHowToVote className="text-cyan-400" />
+                Control de Fase Global
+              </h2>
+
+              <div className="mb-6">
+                <p className="text-gray-300 mb-2">Estado actual:</p>
+                <div className={`${phaseInfo.color} text-white px-6 py-3 rounded-lg inline-block text-lg font-bold`}>
+                  {phaseInfo.text}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-5 gap-3">
+                <button
+                  onClick={() => setGlobalPhase(1)}
+                  disabled={loading === 'global' || currentPhase === 1}
+                  className="bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-lg text-sm font-bold transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">▶️</span>
+                  <span>Activar Fase 1</span>
+                </button>
+
+                <button
+                  onClick={() => setGlobalPhase(0)}
+                  disabled={loading === 'global' || currentPhase === 0}
+                  className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-lg text-sm font-bold transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">⏸️</span>
+                  <span>Cerrar Fase 1</span>
+                </button>
+
+                <button
+                  onClick={() => setGlobalPhase(2)}
+                  disabled={loading === 'global' || currentPhase === 2}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-lg text-sm font-bold transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">▶️</span>
+                  <span>Activar Fase 2</span>
+                </button>
+
+                <button
+                  onClick={() => setGlobalPhase(3)}
+                  disabled={loading === 'global' || currentPhase === 3}
+                  className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-lg text-sm font-bold transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">⏸️</span>
+                  <span>Cerrar Fase 2</span>
+                </button>
+
+                <button
+                  onClick={() => setGlobalPhase(4)}
+                  disabled={loading === 'global' || currentPhase === 4}
+                  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 rounded-lg text-sm font-bold transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">🎉</span>
+                  <span>Ceremonia</span>
+                </button>
+              </div>
+
+              <div className="mt-4 p-4 bg-cyan-500/10 border border-cyan-400/30 rounded-lg">
+                <p className="text-sm text-cyan-200">
+                  <strong>💡 Flujo recomendado:</strong> Fase 1 Activa → Cerrar Fase 1 → Activar Fase 2 → Cerrar Fase 2 → Ceremonia
+                </p>
+              </div>
+            </div>
+          )
+        })()}
 
         <div className="grid gap-4">
           {categories.map((category) => {

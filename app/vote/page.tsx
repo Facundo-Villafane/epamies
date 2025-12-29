@@ -14,6 +14,7 @@ import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
 import AuthGuard from '@/components/AuthGuard'
 import UserMenu from '@/components/UserMenu'
 import { useAuth } from '@/lib/useAuth'
+import WaitingScreen from '@/components/WaitingScreen'
 
 // Configuración de toast personalizada
 const toastConfig = {
@@ -317,6 +318,8 @@ export default function VotePage() {
       toast.success('✅ Tu respuesta ha sido guardada!', toastConfig)
       // Update voted categories list
       await checkVotedCategories()
+      // Reload the text submission to ensure UI is in sync with DB
+      await checkTextSubmission()
     } catch (error: any) {
       console.error('Error submitting text:', error)
       console.error('Error details:', {
@@ -780,6 +783,18 @@ export default function VotePage() {
   // Duos siempre permiten solo 1 voto, categorías normales: 3 en fase 1, 1 en fase 2
   const maxVotes = isDuoCategory ? 1 : (currentPhase === 1 ? 3 : 1)
 
+  // Mostrar pantalla de espera si voting_phase es 0 o 3
+  if (currentPhase === 0 || currentPhase === 3) {
+    return (
+      <AuthGuard>
+        <WaitingScreen
+          phase={currentPhase === 0 ? 'phase1_closed' : 'phase2_closed'}
+          editionName={editionName}
+        />
+      </AuthGuard>
+    )
+  }
+
   // Vista: Listado de categorías
   if (!selectedCategory) {
     return (
@@ -929,20 +944,25 @@ export default function VotePage() {
                   }
                 }}
                 disabled={categories.findIndex(c => c.id === selectedCategory.id) === 0}
-                className="flex items-center gap-1 text-white hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase"
+                className="flex-shrink-0 flex items-center gap-1 text-white hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase"
               >
                 <MdNavigateBefore className="text-lg" /> <span className="hidden sm:inline">PREVIOUS</span>
               </button>
 
-              <div className="text-center flex-1 md:flex-initial">
-                <h1 className="text-sm md:text-base font-bold text-white uppercase truncate max-w-[200px] md:max-w-none">
+              <div className="text-center flex-1 md:flex-initial min-w-0">
+                <h1 className="text-sm md:text-base font-bold text-white uppercase leading-tight">
                   {selectedCategory.name}
                 </h1>
+                {selectedCategory.description && (
+                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 md:line-clamp-none">
+                    {selectedCategory.description}
+                  </p>
+                )}
               </div>
 
               <button
                 onClick={() => setSelectedCategory(null)}
-                className="hidden md:inline text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase whitespace-nowrap"
+                className="hidden md:inline flex-shrink-0 text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase whitespace-nowrap"
               >
                 VIEW ALL
               </button>
@@ -955,7 +975,7 @@ export default function VotePage() {
                   }
                 }}
                 disabled={categories.findIndex(c => c.id === selectedCategory.id) === categories.length - 1}
-                className="flex items-center gap-1 text-white hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase"
+                className="flex-shrink-0 flex items-center gap-1 text-white hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase"
               >
                 <span className="hidden sm:inline">NEXT</span> <MdNavigateNext className="text-lg" />
               </button>

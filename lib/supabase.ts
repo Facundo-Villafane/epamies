@@ -13,7 +13,7 @@ export type Edition = {
   year?: number
   is_active: boolean
   current_display_category_id?: string | null
-  voting_phase: number // 1 = Nominación, 2 = Final
+  voting_phase: number // 0 = Esperando Fase 2, 1 = Fase 1, 2 = Fase 2, 3 = Esperando Ceremonia, 4 = Ceremonia
   phase1_end_date?: string | null
   phase2_end_date?: string | null
   created_at: string
