@@ -54,12 +54,21 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   if (!user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-gradient-to-br from-red-900/30 to-orange-900/30 border-2 border-red-500/50 rounded-2xl p-8 text-center">
-            <div className="text-6xl mb-4">🔒</div>
-            <h1 className="text-3xl font-bold text-white mb-4">Acceso Restringido</h1>
+        <div className="max-w-lg w-full">
+          <div className="bg-gradient-to-br from-green-900/30 to-lime-900/30 border-2 border-green-500/50 rounded-2xl p-8 text-center">
+            {/* Imagen de Ruby */}
+            <div className="mb-6 flex justify-center">
+              <img
+                src="/fe19d97d-38eb-429c-9930-90b6c55dc9f4.webp"
+                alt="Acceso Bloqueado"
+                className="w-64 h-64 object-cover rounded-lg shadow-2xl"
+              />
+            </div>
+            <h1 className="text-4xl font-black text-white mb-4 bg-gradient-to-r from-green-400 to-lime-500 bg-clip-text text-transparent">
+              Ruby bloqueó el locker... otra vez.
+            </h1>
             <p className="text-gray-300 mb-6">
-              Esta sección es solo para administradores. Por favor, inicia sesión.
+              (Debes iniciar sesión para acceder)
             </p>
             <Link href="/">
               <button className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-lg transition-all">
