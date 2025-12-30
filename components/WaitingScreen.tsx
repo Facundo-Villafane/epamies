@@ -102,6 +102,22 @@ export default function WaitingScreen({ phase, editionName }: WaitingScreenProps
             </p>
           </div>
 
+          {/* Display Button - Only shown when Phase 2 is closed (waiting for ceremony) */}
+          {!isPhase1Closed && (
+            <div className="mb-6">
+              <Link href="/display">
+                <button className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-black text-xl px-10 py-5 rounded-xl transition-all transform hover:scale-105 shadow-2xl shadow-purple-500/50">
+                  <FaTrophy className="text-2xl" />
+                  Ver Pantalla de Ceremonia
+                  <FaTrophy className="text-2xl" />
+                </button>
+              </Link>
+              <p className="text-sm text-gray-400 mt-3">
+                Unite a la transmisión en vivo de la ceremonia
+              </p>
+            </div>
+          )}
+
           {/* Back Button */}
           <Link href="/">
             <button className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold px-8 py-4 rounded-lg transition-all transform hover:scale-105 shadow-lg">

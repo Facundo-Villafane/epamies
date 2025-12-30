@@ -78,7 +78,7 @@ export default function CeremonyPage() {
       .from('votes')
       .select('nomination_id')
       .in('nomination_id', nominationIds)
-      .eq('voting_phase', currentPhase)
+      .eq('voting_phase', 2) // Always fetch Phase 2 votes for finalists
 
     const voteCounts: Record<string, number> = {}
     votesData?.forEach((vote: any) => {

@@ -112,7 +112,7 @@ export default function EpamieOroPage() {
         .select('id')
         .eq('edition_id', editionIdParam)
         .eq('category_type', 'participant_based')
-        .neq('is_votable', false)
+        .or('is_votable.eq.true,is_votable.is.null')
 
       if (!individualCategories || individualCategories.length === 0) {
         setTopParticipants([])
