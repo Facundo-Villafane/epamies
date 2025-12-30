@@ -63,17 +63,12 @@ export default function CeremonyPage() {
     const currentCategory = categories.find(c => c.id === selectedCategory)
     if (!currentCategory) return
 
-    // Get nominations (only finalists if phase 2)
-    let query = supabase
+    // Get nominations (only show finalists for ceremony)
+    const { data: nominationsData } = await supabase
       .from('nominations')
-      .select(`*, participant:participants(*)`)
+      .select(`*, participant:participants!participant_id(*)`)
       .eq('category_id', selectedCategory)
-
-    if (currentPhase === 2) {
-      query = query.eq('is_finalist', true)
-    }
-
-    const { data: nominationsData } = await query
+      .eq('is_finalist', true)
 
     if (!nominationsData) return
 
@@ -127,6 +122,41 @@ export default function CeremonyPage() {
     }
   }
 
+  async function startCeremony() {
+    setLoading('start-ceremony')
+    try {
+      await supabase
+        .from('editions')
+        .update({ voting_phase: 4 })
+        .eq('id', editionId)
+      setCurrentPhase(4)
+      alert('✅ Ceremonia iniciada! La pantalla /display ahora mostrará las categorías.')
+    } catch (error) {
+      console.error('Error:', error)
+      alert('❌ Error al iniciar la ceremonia')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function endCeremony() {
+    if (!confirm('¿Terminar la ceremonia? Volverá a la pantalla de pre-ceremonia.')) return
+    setLoading('end-ceremony')
+    try {
+      await supabase
+        .from('editions')
+        .update({ voting_phase: 3 })
+        .eq('id', editionId)
+      setCurrentPhase(3)
+      alert('✅ Ceremonia terminada.')
+    } catch (error) {
+      console.error('Error:', error)
+      alert('❌ Error al terminar la ceremonia')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   function goToPreviousCategory() {
     const currentIndex = categories.findIndex(c => c.id === selectedCategory)
     if (currentIndex > 0) {
@@ -149,8 +179,8 @@ export default function CeremonyPage() {
   const isLastCategory = currentIndex === categories.length - 1
 
   const getPhaseLabel = () => {
-    if (currentPhase === 1) return { text: 'Fase 1: Nominación Popular', color: 'bg-cyan-600' }
-    if (currentPhase === 2) return { text: 'Fase 2: Votación Final (Top 4)', color: 'bg-purple-600' }
+    if (currentPhase === 1) return { text: 'Nominación Popular (Top 4 pasan a Fase 2)', color: 'bg-cyan-600' }
+    if (currentPhase === 2) return { text: 'Votación Final - Top 4 Finalistas', color: 'bg-purple-600' }
     return { text: '', color: 'bg-gray-600' }
   }
 
@@ -168,14 +198,33 @@ export default function CeremonyPage() {
             </h1>
             <p className="text-gray-400">Controla la ceremonia en tiempo real</p>
           </div>
-          <a
-            href="/display"
-            target="_blank"
-            className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-lg transition-all"
-          >
-            <MdScreenShare className="text-xl" />
-            Abrir Display
-          </a>
+          <div className="flex gap-3">
+            {currentPhase !== 4 ? (
+              <button
+                onClick={startCeremony}
+                disabled={loading === 'start-ceremony'}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-lg transition-all"
+              >
+                ▶️ {loading === 'start-ceremony' ? 'Iniciando...' : 'Iniciar Ceremonia'}
+              </button>
+            ) : (
+              <button
+                onClick={endCeremony}
+                disabled={loading === 'end-ceremony'}
+                className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-lg transition-all"
+              >
+                ⏹️ {loading === 'end-ceremony' ? 'Terminando...' : 'Terminar Ceremonia'}
+              </button>
+            )}
+            <a
+              href="/display"
+              target="_blank"
+              className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-lg transition-all"
+            >
+              <MdScreenShare className="text-xl" />
+              Abrir Display
+            </a>
+          </div>
         </div>
 
         {/* Info Banner */}
@@ -350,7 +399,7 @@ export default function CeremonyPage() {
                           {/* Vote count with prominent display */}
                           <div className="mb-4 bg-gray-800/50 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-3">
-                              <span className="text-base font-medium text-gray-300">Votos recibidos en {currentPhase === 2 ? 'Fase 2' : 'Fase 1'}</span>
+                              <span className="text-base font-medium text-gray-300">Votos recibidos</span>
                               <span className="text-4xl font-black bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
                                 {nomination.vote_count}
                               </span>

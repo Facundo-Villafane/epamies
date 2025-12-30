@@ -11,7 +11,7 @@ export default function CategoriesPage() {
   const [selectedEdition, setSelectedEdition] = useState<string>('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({ name: '', description: '', order: 0, category_type: 'participant_based' as 'participant_based' | 'text_based' | 'duo' })
+  const [formData, setFormData] = useState({ name: '', description: '', order: 0, category_type: 'participant_based' as 'participant_based' | 'text_based' | 'duo', is_votable: true })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function CategoriesPage() {
   }
 
   function resetForm() {
-    setFormData({ name: '', description: '', order: categories.length, category_type: 'participant_based' })
+    setFormData({ name: '', description: '', order: categories.length, category_type: 'participant_based', is_votable: true })
     setEditingId(null)
     setShowForm(false)
   }
@@ -99,7 +99,8 @@ export default function CategoriesPage() {
       name: category.name,
       description: category.description || '',
       order: category.order,
-      category_type: category.category_type || 'participant_based'
+      category_type: category.category_type || 'participant_based',
+      is_votable: category.is_votable !== false
     })
     setEditingId(category.id)
     setShowForm(true)
@@ -191,6 +192,23 @@ export default function CategoriesPage() {
                     : 'Fase 1: Voto por 3 participantes. Fase 2: Voto por 1 entre Top 4.'}
                 </p>
               </div>
+              <div className="flex items-center gap-3 p-4 bg-yellow-900/20 border border-yellow-600/50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="is_votable"
+                  checked={formData.is_votable}
+                  onChange={(e) => setFormData({ ...formData, is_votable: e.target.checked })}
+                  className="w-5 h-5 bg-gray-800 border-gray-700 rounded focus:ring-cyan-500"
+                />
+                <div className="flex-grow">
+                  <label htmlFor="is_votable" className="text-sm font-medium text-yellow-200 cursor-pointer">
+                    Permitir votar en /vote
+                  </label>
+                  <p className="text-xs text-yellow-300/80 mt-1">
+                    Desactivá esto para categorías especiales como "Epamie de Oro" que se calculan automáticamente y no deben aparecer en la página de votación.
+                  </p>
+                </div>
+              </div>
               <div className="flex gap-4">
                 <button type="submit" disabled={loading} className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 disabled:opacity-50 px-6 py-2 rounded-lg font-medium">
                   {loading ? 'Guardando...' : 'Guardar'}
@@ -217,6 +235,9 @@ export default function CategoriesPage() {
                       )}
                       {category.category_type === 'duo' && (
                         <span className="bg-pink-600 text-white text-xs px-2 py-1 rounded font-bold">DUO</span>
+                      )}
+                      {category.is_votable === false && (
+                        <span className="bg-yellow-600 text-black text-xs px-2 py-1 rounded font-bold">🏆 NO VOTABLE</span>
                       )}
                     </div>
                     {category.description && <p className="text-gray-400">{category.description}</p>}

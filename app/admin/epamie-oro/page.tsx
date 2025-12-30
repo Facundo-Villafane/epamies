@@ -31,6 +31,8 @@ export default function EpamieOroPage() {
   }, [])
 
   async function fetchData() {
+    console.log('🚀 Starting fetchData...')
+
     // Get active edition
     const { data: activeEdition } = await supabase
       .from('editions')
@@ -38,21 +40,33 @@ export default function EpamieOroPage() {
       .eq('is_active', true)
       .single()
 
-    if (!activeEdition) return
+    console.log('📅 Active edition:', activeEdition)
+
+    if (!activeEdition) {
+      console.log('⚠️ No active edition found')
+      return
+    }
 
     setEditionId(activeEdition.id)
 
     // Get or find Epamie de Oro category
-    const { data: categories } = await supabase
+    const { data: categories, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
       .eq('edition_id', activeEdition.id)
       .eq('is_votable', false)
       .order('order')
 
+    console.log('🏆 Non-votable categories:', categories)
+    console.log('❌ Categories error (if any):', categoriesError)
+
     if (categories && categories.length > 0) {
+      console.log('✅ Setting epamieCategory to:', categories[0])
       setEpamieCategory(categories[0])
+      console.log('🔄 Calling fetchCurrentNominations with category ID:', categories[0].id)
       await fetchCurrentNominations(categories[0].id)
+    } else {
+      console.log('⚠️ No non-votable categories found')
     }
 
     // Calculate Top 3
@@ -70,13 +84,21 @@ export default function EpamieOroPage() {
   }
 
   async function fetchCurrentNominations(categoryId: string) {
-    const { data: nominations } = await supabase
+    console.log('🔍 Fetching nominations for category:', categoryId)
+
+    const { data: nominations, error } = await supabase
       .from('nominations')
-      .select('id, is_winner, participant:participants(*)')
+      .select('id, is_winner, participant:participants!participant_id(*)')
       .eq('category_id', categoryId)
 
+    console.log('📊 Nominations data:', nominations)
+    console.log('❌ Error (if any):', error)
+
     if (nominations) {
+      console.log('✅ Setting currentNominations with', nominations.length, 'items')
       setCurrentNominations(nominations as any)
+    } else {
+      console.log('⚠️ No nominations data returned')
     }
   }
 
@@ -166,23 +188,29 @@ export default function EpamieOroPage() {
     setLoading('auto-populate')
 
     try {
-      // Clear existing nominations
-      await supabase
+      // Get existing nominations to preserve manual ones
+      const { data: existingNominations } = await supabase
         .from('nominations')
-        .delete()
+        .select('participant_id')
         .eq('category_id', epamieCategory.id)
 
-      // Add top 3 as nominations
-      const nominationsToInsert = topParticipants.map(p => ({
-        category_id: epamieCategory.id,
-        participant_id: p.participant.id,
-        is_winner: false,
-        is_finalist: true
-      }))
+      const existingParticipantIds = new Set(existingNominations?.map(n => n.participant_id) || [])
 
-      await supabase
-        .from('nominations')
-        .insert(nominationsToInsert)
+      // Only add top 3 participants that aren't already nominated
+      const nominationsToInsert = topParticipants
+        .filter(p => !existingParticipantIds.has(p.participant.id))
+        .map(p => ({
+          category_id: epamieCategory.id,
+          participant_id: p.participant.id,
+          is_winner: false,
+          is_finalist: true
+        }))
+
+      if (nominationsToInsert.length > 0) {
+        await supabase
+          .from('nominations')
+          .insert(nominationsToInsert)
+      }
 
       await fetchCurrentNominations(epamieCategory.id)
     } catch (error) {
@@ -195,24 +223,35 @@ export default function EpamieOroPage() {
   async function addManualNomination() {
     if (!epamieCategory || !selectedParticipant) return
 
+    console.log('➕ Adding manual nomination...')
+    console.log('Category ID:', epamieCategory.id)
+    console.log('Participant ID:', selectedParticipant)
+
     setLoading('add-manual')
 
     try {
       // Check if already nominated
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('nominations')
-        .select('id')
+        .select('id, participant:participants!participant_id(name)')
         .eq('category_id', epamieCategory.id)
         .eq('participant_id', selectedParticipant)
-        .single()
+        .maybeSingle()
+
+      console.log('🔍 Duplicate check result:', existing)
+      console.log('❌ Check error (if any):', checkError)
 
       if (existing) {
-        alert('Este participante ya está nominado en esta categoría')
+        const participantName = (existing as any).participant?.name || 'Este participante'
+        console.log('⚠️ Participant already nominated:', participantName)
+        alert(`⚠️ ${participantName} ya está nominado en "${epamieCategory.name}"`)
+        console.log('🔄 Refreshing nominations list...')
+        await fetchCurrentNominations(epamieCategory.id) // Refresh list
         setLoading(null)
         return
       }
 
-      await supabase
+      const { error: insertError } = await supabase
         .from('nominations')
         .insert({
           category_id: epamieCategory.id,
@@ -221,10 +260,16 @@ export default function EpamieOroPage() {
           is_finalist: true
         })
 
+      if (insertError) {
+        throw insertError
+      }
+
       setSelectedParticipant('')
       await fetchCurrentNominations(epamieCategory.id)
+      alert('✅ Participante agregado exitosamente!')
     } catch (error) {
       console.error('Error adding manual nomination:', error)
+      alert('❌ Error al agregar participante: ' + (error as any).message)
     } finally {
       setLoading(null)
     }
@@ -382,16 +427,27 @@ export default function EpamieOroPage() {
                 className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-black font-black text-lg px-8 py-4 rounded-lg transition-all"
               >
                 {loading === 'auto-populate'
-                  ? 'Poblando...'
-                  : 'Auto-poblar categoría con Top 3'}
+                  ? 'Agregando Top 3...'
+                  : '✨ Agregar Top 3 (preserva nominados manuales)'}
               </button>
+              <p className="text-sm text-gray-400 mt-2 text-center">
+                Los participantes manuales no se eliminarán. Solo se agregan los Top 3 que no estén ya nominados.
+              </p>
             </div>
 
             {/* Current Nominations Section */}
             <div className="mb-8 bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-              <h2 className="text-3xl font-bold text-white mb-6">
-                Nominados Actuales en "{epamieCategory.name}"
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-white">
+                  Nominados Actuales en "{epamieCategory.name}"
+                </h2>
+                <button
+                  onClick={() => fetchCurrentNominations(epamieCategory.id)}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+                >
+                  🔄 Recargar Lista
+                </button>
+              </div>
 
               {currentNominations.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">

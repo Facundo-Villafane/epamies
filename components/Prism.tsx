@@ -106,6 +106,7 @@ export default function Prism({
       uniform float uGlow;
       uniform float uHueShift;
       uniform float uColorFrequency;
+      uniform float uTransparent;
       uniform vec3 uBaseColor;
 
       varying vec3 vNormal;
@@ -142,7 +143,7 @@ export default function Prism({
         float edge = 1.0 - abs(dot(viewDirection, vNormal));
         color += edge * 0.3 * vec3(0.6, 0.9, 1.0);
 
-        float alpha = transparent ? 0.9 : 1.0;
+        float alpha = uTransparent > 0.5 ? 0.9 : 1.0;
         gl_FragColor = vec4(color, alpha);
       }
     `
@@ -220,6 +221,7 @@ export default function Prism({
         uHueShift: { value: hueShift },
         uColorFrequency: { value: colorFrequency },
         uAnimationType: { value: animationType === 'rotate' ? 1 : animationType === '3drotate' ? 2 : animationType === 'oscillate' ? 3 : 4 },
+        uTransparent: { value: transparent ? 1.0 : 0.0 },
         uBaseColor: { value: new Vec3(0.2, 0.6, 1.0) },
       },
       transparent: transparent,
