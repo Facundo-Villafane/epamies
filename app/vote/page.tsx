@@ -131,7 +131,8 @@ export default function VotePage() {
   const voterId = user?.email || ''
 
   // Get current phase from edition (not category)
-  const currentPhase = activeEdition?.voting_phase || 1
+  // Use ?? instead of || to handle 0 correctly
+  const currentPhase = activeEdition?.voting_phase ?? 1
 
   useEffect(() => {
     fetchData()
@@ -174,6 +175,13 @@ export default function VotePage() {
       setEditionName(activeEditionRes.data.name)
       setEditionYear(activeEditionRes.data.year)
 
+      // DEBUG: Log the current voting phase
+      console.log('🎯 DEBUG - Voting Phase Info:', {
+        votingPhase: activeEditionRes.data.voting_phase,
+        editionName: activeEditionRes.data.name,
+        isActive: activeEditionRes.data.is_active
+      })
+
       const categoriesRes = await supabase
         .from('categories')
         .select('*')
@@ -181,7 +189,9 @@ export default function VotePage() {
         .order('order')
 
       if (categoriesRes.data) {
-        setCategories(categoriesRes.data)
+        // Filter out non-votable categories (like Epamie de Oro)
+        const votableCategories = categoriesRes.data.filter(cat => cat.is_votable !== false)
+        setCategories(votableCategories)
       }
     }
   }
@@ -801,8 +811,15 @@ export default function VotePage() {
   // Duos siempre permiten solo 1 voto, categorías normales: 3 en fase 1, 1 en fase 2
   const maxVotes = isDuoCategory ? 1 : (currentPhase === 1 ? 3 : 1)
 
+  // DEBUG: Log before checking waiting screen condition
+  console.log('🔍 Checking waiting screen condition:', {
+    currentPhase,
+    shouldShowWaiting: currentPhase === 0 || currentPhase === 3
+  })
+
   // Mostrar pantalla de espera si voting_phase es 0 o 3
   if (currentPhase === 0 || currentPhase === 3) {
+    console.log('✅ Showing WaitingScreen with phase:', currentPhase === 0 ? 'phase1_closed' : 'phase2_closed')
     return (
       <AuthGuard>
         <WaitingScreen

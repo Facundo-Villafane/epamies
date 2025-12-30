@@ -129,7 +129,7 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-2xl font-bold mb-4 text-white">Acciones rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <Link href="/admin/editions">
               <button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
                 <div className="text-2xl mb-2"><MdAdd /></div>
@@ -163,6 +163,13 @@ export default function AdminDashboard() {
                 <div className="text-2xl mb-2"><MdMovie /></div>
                 <div className="font-bold">Iniciar Ceremonia</div>
                 <div className="text-sm text-purple-100">Seleccionar ganadores en vivo</div>
+              </button>
+            </Link>
+            <Link href="/admin/epamie-oro">
+              <button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 px-6 py-4 rounded-lg font-medium transition-colors text-left text-white">
+                <div className="text-2xl mb-2"><FaTrophy /></div>
+                <div className="font-bold">Epamie de Oro</div>
+                <div className="text-sm text-yellow-100">Top 3 más votados</div>
               </button>
             </Link>
           </div>

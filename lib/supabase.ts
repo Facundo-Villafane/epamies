@@ -35,6 +35,7 @@ export type Category = {
   edition_id: string
   voting_phase: number // 1 = Nominación, 2 = Final
   category_type: 'participant_based' | 'text_based' | 'duo' // Tipo de categoría
+  is_votable?: boolean // Si false, no aparece en /vote (ej: Epamie de Oro)
   phase1_end_date?: string
   phase2_end_date?: string
   created_at: string

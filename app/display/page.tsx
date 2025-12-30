@@ -4,27 +4,31 @@ import { useEffect, useState, memo } from 'react'
 import { supabase, type Category, type Participant } from '@/lib/supabase'
 import { FaTrophy } from 'react-icons/fa'
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
-import FloatingLines from '@/components/FloatingLines'
+import Prism from '@/components/Prism'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type NominationDisplay = {
   id: string
   participant: Participant
   is_winner: boolean
   category_id: string
+  vote_count?: number
 }
 
 // Componente memoizado para el fondo - no se re-renderiza entre cambios de categoría
 const BackgroundAnimation = memo(() => (
-  <div className="fixed inset-0 z-0 opacity-30">
-    <FloatingLines
-      linesGradient={['#2DD4BF', '#8B5CF6', '#EC4899']}
-      enabledWaves={['top', 'middle', 'bottom']}
-      lineCount={[8, 10, 6]}
-      lineDistance={[8, 6, 10]}
-      animationSpeed={0.5}
-      interactive={false}
-      parallax={false}
-      mixBlendMode="screen"
+  <div className="fixed inset-0 z-0 opacity-40">
+    <Prism
+      height={3.5}
+      baseWidth={5.5}
+      animationType="3drotate"
+      glow={0.5}
+      noise={0}
+      scale={3.6}
+      hueShift={0}
+      colorFrequency={1}
+      timeScale={0.5}
+      transparent={true}
     />
   </div>
 ))
@@ -36,6 +40,7 @@ export default function DisplayPage() {
   const [allNominations, setAllNominations] = useState<NominationDisplay[]>([])
   const [currentCategoryId, setCurrentCategoryId] = useState<string>('')
   const [editionName, setEditionName] = useState('')
+  const [votingPhase, setVotingPhase] = useState<number>(1)
 
   useEffect(() => {
     fetchData()
@@ -68,6 +73,7 @@ export default function DisplayPage() {
 
     if (activeEdition.data) {
       setEditionName(activeEdition.data.name)
+      setVotingPhase(activeEdition.data.voting_phase || 1)
 
       const categoriesRes = await supabase
         .from('categories')
@@ -81,11 +87,13 @@ export default function DisplayPage() {
         // Set current category from edition or default to first
         setCurrentCategoryId(activeEdition.data.current_display_category_id || categoriesRes.data[0].id)
 
-        const nominationsRes = await supabase
+        // In Phase 2-3, only show finalists. In Phase 4, show all nominations
+        let nominationsQuery = supabase
           .from('nominations')
           .select(`
             id,
             is_winner,
+            is_finalist,
             category_id,
             participant_id,
             duo_participant2_id,
@@ -94,8 +102,37 @@ export default function DisplayPage() {
           `)
           .in('category_id', categoriesRes.data.map(c => c.id))
 
+        // Only show finalists in Phase 2 and 3
+        if (activeEdition.data.voting_phase === 2 || activeEdition.data.voting_phase === 3) {
+          nominationsQuery = nominationsQuery.eq('is_finalist', true)
+        }
+
+        const nominationsRes = await nominationsQuery
+
         if (nominationsRes.data) {
-          setAllNominations(nominationsRes.data as any)
+          let nominationsWithVotes = nominationsRes.data as any
+
+          // In Phase 4, fetch vote counts
+          if (activeEdition.data.voting_phase === 4 && nominationsRes.data.length > 0) {
+            const nominationIds = nominationsRes.data.map((n: any) => n.id)
+            const { data: votesData } = await supabase
+              .from('votes')
+              .select('nomination_id')
+              .in('nomination_id', nominationIds)
+              .eq('voting_phase', 2) // Phase 2 votes for finalists
+
+            const voteCounts: Record<string, number> = {}
+            votesData?.forEach((vote: any) => {
+              voteCounts[vote.nomination_id] = (voteCounts[vote.nomination_id] || 0) + 1
+            })
+
+            nominationsWithVotes = nominationsRes.data.map((nom: any) => ({
+              ...nom,
+              vote_count: voteCounts[nom.id] || 0
+            }))
+          }
+
+          setAllNominations(nominationsWithVotes)
         }
       }
     }
@@ -145,52 +182,147 @@ export default function DisplayPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {currentNominations.map((nomination) => (
-            <div
-              key={nomination.id}
-              className={`relative group transition-all duration-500 ${
-                winner?.id === nomination.id
-                  ? 'scale-110 z-10'
-                  : winner
-                  ? 'opacity-40 scale-95'
-                  : ''
-              }`}
-            >
-              <div className="bg-gray-900/80 backdrop-blur-md rounded-xl overflow-hidden border-2 border-gray-800 hover:border-cyan-500 transition-all">
-                {nomination.participant.image_url && (
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={nomination.participant.image_url}
-                      alt={nomination.participant.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {winner?.id === nomination.id && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/80 via-cyan-500/40 to-transparent flex items-end justify-center pb-4">
-                        <div className="text-6xl animate-bounce">
-                          <FaTrophy className="text-yellow-400" />
-                        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentCategoryId}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {currentNominations.map((nomination, index) => {
+              const isWinner = winner?.id === nomination.id
+              const showWinner = votingPhase === 4 && isWinner
+              const maxVotes = Math.max(...currentNominations.map(n => n.vote_count || 0), 0)
+
+              return (
+                <motion.div
+                  key={nomination.id}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.15,
+                    ease: "easeOut"
+                  }}
+                  className={`relative group ${
+                    showWinner
+                      ? 'z-10'
+                      : winner && votingPhase === 4
+                      ? 'opacity-60'
+                      : ''
+                  }`}
+                >
+                  <motion.div
+                    animate={{
+                      scale: showWinner ? 1.05 : winner && votingPhase === 4 ? 0.95 : 1,
+                    }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    className={`bg-gray-900/80 backdrop-blur-md rounded-xl overflow-hidden border-4 transition-all ${
+                      showWinner
+                        ? 'border-yellow-400 shadow-2xl shadow-yellow-400/50'
+                        : 'border-gray-800 hover:border-cyan-500'
+                    }`}
+                  >
+                    {nomination.participant.image_url && (
+                      <div className="relative h-64 overflow-hidden">
+                        <img
+                          src={nomination.participant.image_url}
+                          alt={nomination.participant.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <AnimatePresence>
+                          {showWinner && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              transition={{ duration: 0.5 }}
+                              className="absolute inset-0 bg-gradient-to-t from-yellow-500/80 via-yellow-500/40 to-transparent flex items-end justify-center pb-4"
+                            >
+                              <motion.div
+                                animate={{
+                                  y: [0, -10, 0],
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                                className="text-6xl"
+                              >
+                                <FaTrophy className="text-yellow-400 drop-shadow-2xl" />
+                              </motion.div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
-                  </div>
-                )}
 
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold mb-2 text-white">{nomination.participant.name}</h3>
-                  {nomination.participant.description && (
-                    <p className="text-gray-300">{nomination.participant.description}</p>
-                  )}
-                  {winner?.id === nomination.id && (
-                    <div className="mt-4 bg-gradient-to-r from-cyan-400 to-purple-500 text-white font-bold py-2 px-4 rounded-lg text-center text-xl flex items-center justify-center gap-2">
-                      <FaTrophy />
-                      ¡GANADOR!
+                    <div className="p-6">
+                      <h3 className="text-2xl font-bold mb-2 text-white">{nomination.participant.name}</h3>
+                      {nomination.participant.description && (
+                        <p className="text-gray-300">{nomination.participant.description}</p>
+                      )}
+
+                      {/* Show vote count in Phase 4 */}
+                      <AnimatePresence>
+                        {votingPhase === 4 && nomination.vote_count !== undefined && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="mt-4 overflow-hidden"
+                          >
+                            <div className="bg-gray-800/50 rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-gray-400">Votos</span>
+                                <motion.span
+                                  initial={{ opacity: 0, scale: 0.5 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.5, delay: 0.5 }}
+                                  className="text-3xl font-black bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent"
+                                >
+                                  {nomination.vote_count}
+                                </motion.span>
+                              </div>
+                              <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${maxVotes > 0 ? (nomination.vote_count / maxVotes) * 100 : 0}%` }}
+                                  transition={{ duration: 1, delay: 0.7, ease: "easeOut" }}
+                                  className="bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 h-2 rounded-full"
+                                />
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Show winner badge only in Phase 4 */}
+                      <AnimatePresence>
+                        {showWinner && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="mt-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-black py-3 px-4 rounded-lg text-center text-xl flex items-center justify-center gap-2 shadow-lg"
+                          >
+                            <FaTrophy />
+                            ¡GANADOR!
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                  </motion.div>
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        </AnimatePresence>
       </div>
       </div>
     </div>
