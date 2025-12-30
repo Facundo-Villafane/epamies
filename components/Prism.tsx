@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { Renderer, Camera, Transform, Program, Mesh, Vec3 } from 'ogl'
+import { Renderer, Camera, Transform, Program, Mesh, Vec3, Geometry } from 'ogl'
 
 type AnimationType = 'rotate' | '3drotate' | 'oscillate' | 'morph'
 
@@ -199,11 +199,13 @@ export default function Prism({
         normals.push(x / length, y / length, z / length)
       }
 
-      return {
+      const geometry = new Geometry(gl, {
         position: { size: 3, data: new Float32Array(positions) },
         normal: { size: 3, data: new Float32Array(normals) },
         index: { data: new Uint16Array(indices) },
-      }
+      })
+
+      return geometry
     }
 
     const geometry = createPrismGeometry(height, baseWidth)
