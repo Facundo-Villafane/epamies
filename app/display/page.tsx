@@ -4,7 +4,7 @@ import { useEffect, useState, memo } from 'react'
 import { supabase, type Category, type Participant } from '@/lib/supabase'
 import { FaTrophy } from 'react-icons/fa'
 import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md'
-import PrismaticBurst from '@/components/PrismaticBurst'
+import Aurora from '@/components/Aurora'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type NominationDisplay = {
@@ -17,15 +17,12 @@ type NominationDisplay = {
 
 // Componente memoizado para el fondo - no se re-renderiza entre cambios de categoría
 const BackgroundAnimation = memo(() => (
-  <div className="fixed inset-0 z-0 opacity-60">
-    <PrismaticBurst
-      intensity={2.5}
-      speed={0.3}
-      animationType="rotate3d"
-      colors={['#06b6d4', '#a855f7', '#ec4899', '#3b82f6']}
-      distort={5}
-      rayCount={16}
-      mixBlendMode="lighten"
+  <div className="fixed inset-0 z-0">
+    <Aurora
+      colorStops={['#06B6D4', '#A855F7', '#EC4899']}
+      amplitude={1.2}
+      blend={0.6}
+      speed={0.8}
     />
   </div>
 ))
