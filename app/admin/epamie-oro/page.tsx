@@ -114,7 +114,10 @@ export default function EpamieOroPage() {
         .eq('category_type', 'participant_based')
         .or('is_votable.eq.true,is_votable.is.null')
 
+      console.log('📊 Categories found:', individualCategories?.length || 0, individualCategories)
+
       if (!individualCategories || individualCategories.length === 0) {
+        console.log('⚠️ No categories found - stopping calculation')
         setTopParticipants([])
         return
       }
@@ -128,7 +131,10 @@ export default function EpamieOroPage() {
         .in('category_id', categoryIds)
         .eq('is_finalist', true) // Only finalists have Phase 2 votes
 
-      if (!nominations) {
+      console.log('🏆 Finalist nominations found:', nominations?.length || 0, nominations)
+
+      if (!nominations || nominations.length === 0) {
+        console.log('⚠️ No finalist nominations found - stopping calculation')
         setTopParticipants([])
         return
       }
@@ -141,6 +147,8 @@ export default function EpamieOroPage() {
         .select('nomination_id')
         .in('nomination_id', nominationIds)
         .eq('voting_phase', 2) // Only count Phase 2 votes (final voting)
+
+      console.log('🗳️ Phase 2 votes found:', votes?.length || 0, votes)
 
       // Count votes per participant
       const votesByParticipant: Record<string, { votes: number; categories: Set<string> }> = {}
@@ -176,7 +184,9 @@ export default function EpamieOroPage() {
 
       // Sort by votes descending and get top 3
       participantsWithVotes.sort((a, b) => b.total_votes - a.total_votes)
-      setTopParticipants(participantsWithVotes.slice(0, 3))
+      const top3 = participantsWithVotes.slice(0, 3)
+      console.log('🥇 Top 3 calculated:', top3)
+      setTopParticipants(top3)
     } catch (error) {
       console.error('Error calculating Top 3:', error)
     } finally {
