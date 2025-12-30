@@ -106,67 +106,66 @@ export default function EpamieOroPage() {
     setLoading('calculating')
 
     try {
-      // Get all individual categories (excluding duos, text_based, and non-votable)
-      const { data: individualCategories } = await supabase
+      console.log('🎯 Edition ID:', editionIdParam)
+
+      // Get ALL categories in edition (no filters)
+      const { data: allCategories } = await supabase
         .from('categories')
-        .select('id')
+        .select('id, name')
         .eq('edition_id', editionIdParam)
-        .eq('category_type', 'participant_based')
-        .or('is_votable.eq.true,is_votable.is.null')
 
-      console.log('📊 Categories found:', individualCategories?.length || 0, individualCategories)
+      console.log('📊 Total categories found:', allCategories?.length || 0)
+      console.log('📋 Category IDs:', allCategories?.map(c => c.id))
 
-      if (!individualCategories || individualCategories.length === 0) {
+      if (!allCategories || allCategories.length === 0) {
         console.log('⚠️ No categories found - stopping calculation')
         setTopParticipants([])
         return
       }
 
-      const categoryIds = individualCategories.map(c => c.id)
+      const categoryIds = allCategories.map(c => c.id)
 
-      // Get all FINALIST nominations from these categories (only finalists have Phase 2 votes)
-      const { data: nominations } = await supabase
+      // Get ALL nominations from these categories (no filters)
+      const { data: nominations, error: nomError } = await supabase
         .from('nominations')
-        .select('id, participant_id, participant:participants(*)')
+        .select('id, participant_id, category_id, participant:participants!participant_id(*)')
         .in('category_id', categoryIds)
-        .eq('is_finalist', true) // Only finalists have Phase 2 votes
 
-      console.log('🏆 Finalist nominations found:', nominations?.length || 0, nominations)
+      console.log('🏆 Total nominations found:', nominations?.length || 0)
+      console.log('❌ Nomination error:', nomError)
+      if (nominations && nominations.length > 0) {
+        console.log('📝 Sample nomination:', nominations[0])
+      }
 
       if (!nominations || nominations.length === 0) {
-        console.log('⚠️ No finalist nominations found - stopping calculation')
+        console.log('⚠️ No nominations found - stopping calculation')
         setTopParticipants([])
         return
       }
 
       const nominationIds = nominations.map((n: any) => n.id)
 
-      // Get all votes for these nominations (ONLY Phase 2 votes for finalists)
+      // Get ALL Phase 2 votes for these nominations
       const { data: votes } = await supabase
         .from('votes')
         .select('nomination_id')
         .in('nomination_id', nominationIds)
-        .eq('voting_phase', 2) // Only count Phase 2 votes (final voting)
+        .eq('voting_phase', 2)
 
-      console.log('🗳️ Phase 2 votes found:', votes?.length || 0, votes)
+      console.log('🗳️ Phase 2 votes found:', votes?.length || 0)
 
-      // Count votes per participant
-      const votesByParticipant: Record<string, { votes: number; categories: Set<string> }> = {}
-
-      nominations.forEach((nom: any) => {
-        const participantId = nom.participant_id
-        if (!votesByParticipant[participantId]) {
-          votesByParticipant[participantId] = { votes: 0, categories: new Set() }
-        }
-      })
+      // Count votes per participant across ALL nominations/categories
+      const votesByParticipant: Record<string, number> = {}
 
       votes?.forEach((vote: any) => {
         const nomination = nominations.find((n: any) => n.id === vote.nomination_id)
         if (nomination) {
           const participantId = (nomination as any).participant_id
-          votesByParticipant[participantId].votes += 1
+          votesByParticipant[participantId] = (votesByParticipant[participantId] || 0) + 1
         }
       })
+
+      console.log('👥 Participants with votes:', Object.keys(votesByParticipant).length)
 
       // Convert to array and get participant details
       const participantsWithVotes: ParticipantWithVotes[] = []
@@ -176,8 +175,8 @@ export default function EpamieOroPage() {
         if (nomination) {
           participantsWithVotes.push({
             participant: (nomination as any).participant,
-            total_votes: votesByParticipant[participantId].votes,
-            categories_count: votesByParticipant[participantId].categories.size
+            total_votes: votesByParticipant[participantId],
+            categories_count: 0 // Not tracking categories anymore
           })
         }
       }
@@ -332,6 +331,102 @@ export default function EpamieOroPage() {
     }
   }
 
+  async function markTop4AsFinalists() {
+    if (!editionId) return
+
+    setLoading('mark-finalists')
+
+    try {
+      // Get all participant_based votable categories
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('edition_id', editionId)
+        .eq('category_type', 'participant_based')
+        .or('is_votable.eq.true,is_votable.is.null')
+
+      console.log('📋 Categories to process:', categories)
+
+      if (!categories || categories.length === 0) {
+        alert('⚠️ No se encontraron categorías votables')
+        return
+      }
+
+      let totalUpdated = 0
+      const details: string[] = []
+
+      for (const category of categories) {
+        // Get all nominations for this category
+        const { data: nominations } = await supabase
+          .from('nominations')
+          .select('id, participant_id')
+          .eq('category_id', category.id)
+
+        console.log(`📊 Category "${(category as any).name}": ${nominations?.length || 0} nominations`)
+
+        if (!nominations || nominations.length === 0) continue
+
+        const nominationIds = nominations.map((n: any) => n.id)
+
+        // Get Phase 1 votes for these nominations
+        const { data: votes } = await supabase
+          .from('votes')
+          .select('nomination_id')
+          .in('nomination_id', nominationIds)
+          .eq('voting_phase', 1)
+
+        console.log(`🗳️ Category "${(category as any).name}": ${votes?.length || 0} Phase 1 votes`)
+
+        // Count votes per nomination
+        const voteCounts: Record<string, number> = {}
+        votes?.forEach((vote: any) => {
+          voteCounts[vote.nomination_id] = (voteCounts[vote.nomination_id] || 0) + 1
+        })
+
+        // Sort nominations by vote count and get top 4
+        const sortedNominations = nominations
+          .map((nom: any) => ({
+            id: nom.id,
+            votes: voteCounts[nom.id] || 0
+          }))
+          .sort((a, b) => b.votes - a.votes)
+          .slice(0, 4)
+
+        const top4Ids = sortedNominations.map(n => n.id)
+
+        console.log(`🏆 Category "${(category as any).name}": Marking ${top4Ids.length} as finalists`)
+
+        // Mark top 4 as finalists (WITHOUT modifying is_winner)
+        if (top4Ids.length > 0) {
+          const { error } = await supabase
+            .from('nominations')
+            .update({ is_finalist: true })
+            .in('id', top4Ids)
+
+          if (error) {
+            console.error(`❌ Error updating category "${(category as any).name}":`, error)
+          } else {
+            totalUpdated += top4Ids.length
+            details.push(`${(category as any).name}: ${top4Ids.length} finalistas`)
+          }
+        }
+      }
+
+      console.log('✅ Total finalists marked:', totalUpdated)
+      console.log('📝 Details:', details)
+
+      alert(`✅ Se marcaron ${totalUpdated} nominaciones como finalistas en ${categories.length} categorías\n\nNOTA: Los ganadores (is_winner) NO fueron modificados.`)
+
+      // Recalculate Top 3 now that we have finalists
+      await calculateTop3(editionId)
+    } catch (error) {
+      console.error('Error marking finalists:', error)
+      alert('❌ Error al marcar finalistas: ' + (error as any).message)
+    } finally {
+      setLoading(null)
+    }
+  }
+
   return (
     <div className="p-8 bg-black min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -357,26 +452,59 @@ export default function EpamieOroPage() {
           </div>
         ) : (
           <>
-            {/* Top 3 Calculation Section */}
+            {/* Step 1: Mark Top 4 as Finalists */}
+            <div className="mb-8 bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border-2 border-blue-500/50 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-white flex items-center gap-2 mb-2">
+                    <FaMedal className="text-blue-400" />
+                    Paso 1: Marcar Top 4 como Finalistas
+                  </h2>
+                  <p className="text-sm text-blue-200/80">
+                    Este paso marca los 4 participantes más votados de cada categoría (en Fase 1) como finalistas. Solo necesitás hacer esto UNA VEZ antes de calcular el Top 3.
+                  </p>
+                </div>
+                <button
+                  onClick={markTop4AsFinalists}
+                  disabled={loading === 'mark-finalists'}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-lg transition-all whitespace-nowrap"
+                >
+                  <MdRefresh className={loading === 'mark-finalists' ? 'animate-spin' : ''} />
+                  {loading === 'mark-finalists' ? 'Marcando...' : 'Marcar Finalistas'}
+                </button>
+              </div>
+              <div className="bg-blue-950/50 rounded-lg p-4 text-sm text-blue-100">
+                <p className="mb-2">⚠️ <strong>IMPORTANTE:</strong></p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>Esto marca automáticamente el Top 4 de CADA categoría basado en los votos de Fase 1</li>
+                  <li>Solo afecta categorías de tipo "participant_based" que sean votables</li>
+                  <li>NO modifica los ganadores (is_winner), solo marca finalistas (is_finalist)</li>
+                  <li>Después de ejecutar esto, podrás calcular el Top 3 basado en votos de Fase 2</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Step 2: Top 3 Calculation Section */}
             <div className="mb-8 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border-2 border-yellow-500/50 rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold text-white flex items-center gap-2">
-                  <FaMedal className="text-yellow-400" />
-                  Top 3 Participantes
-                </h2>
+                <div>
+                  <h2 className="text-3xl font-bold text-white flex items-center gap-2 mb-2">
+                    <FaMedal className="text-yellow-400" />
+                    Paso 2: Top 3 Participantes
+                  </h2>
+                  <p className="text-sm text-yellow-200/80">
+                    Calculado automáticamente sumando todos los votos de Fase 2 de los finalistas en categorías individuales. Primero ejecutá el Paso 1.
+                  </p>
+                </div>
                 <button
                   onClick={() => calculateTop3(editionId)}
                   disabled={loading === 'calculating'}
                   className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-lg transition-all"
                 >
                   <MdRefresh className={loading === 'calculating' ? 'animate-spin' : ''} />
-                  {loading === 'calculating' ? 'Calculando...' : 'Recalcular'}
+                  {loading === 'calculating' ? 'Calculando...' : 'Calcular Top 3'}
                 </button>
               </div>
-
-              <p className="text-gray-300 mb-6">
-                Calculado automáticamente sumando todos los votos de categorías individuales (excluye duos y categorías de texto)
-              </p>
 
               {topParticipants.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
