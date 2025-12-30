@@ -337,7 +337,7 @@ export default function DisplayPage() {
           }
 
           // Sort by vote count for transparency (highest to lowest)
-          nominationsWithVotes.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+          nominationsWithVotes.sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0))
 
           setAllNominations(nominationsWithVotes)
         }
