@@ -31,7 +31,7 @@ export default function Prism({
   transparent = true,
 }: PrismProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     if (!containerRef.current) return
