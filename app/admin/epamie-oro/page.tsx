@@ -134,11 +134,12 @@ export default function EpamieOroPage() {
 
       const nominationIds = nominations.map((n: any) => n.id)
 
-      // Get all votes for these nominations (both Phase 1 and Phase 2)
+      // Get all votes for these nominations (ONLY Phase 2 votes for finalists)
       const { data: votes } = await supabase
         .from('votes')
         .select('nomination_id')
         .in('nomination_id', nominationIds)
+        .eq('voting_phase', 2) // Only count Phase 2 votes
 
       // Count votes per participant
       const votesByParticipant: Record<string, { votes: number; categories: Set<string> }> = {}
