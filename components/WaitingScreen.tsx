@@ -53,7 +53,7 @@ export default function WaitingScreen({ phase, editionName }: WaitingScreenProps
 
           {/* Title */}
           <h1 className="text-5xl md:text-7xl font-black mb-8 text-white drop-shadow-[0_0_25px_rgba(6,182,212,0.8)]">
-            {isPhase1Closed ? '¡Siéntate y Espera!' : '¡Siéntate y Relájate!'}
+            {isPhase1Closed ? '¡Sentate y Esperá!' : '¡Sentate y Relajate!'}
           </h1>
 
           {/* Message */}
